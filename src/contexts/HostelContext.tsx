@@ -66,6 +66,7 @@ export function HostelProvider({ children }: { children: ReactNode }) {
             capacity: r.capacity,
             monthlyRent: r.monthly_rent,
             roomType: r.room_type || 'room',
+            occupancyType: r.occupancy_type || 'students',
             wing: r.wing || undefined,
             parentRoomId: r.parent_room_id || undefined,
             hasAttachedBathroom: r.has_attached_bathroom || false,
@@ -77,7 +78,10 @@ export function HostelProvider({ children }: { children: ReactNode }) {
               email: s.email,
               emergencyContact: s.emergency_contact,
               joinDate: s.join_date,
-              monthlyRent: s.monthly_rent
+              monthlyRent: s.monthly_rent,
+              paymentCycle: s.payment_cycle || 'monthly',
+              customDays: s.custom_days || undefined,
+              nextPaymentDue: s.next_payment_due || undefined
             })),
             subRooms: []
           }));
@@ -135,6 +139,51 @@ export function HostelProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     loadData();
+
+    // Set up real-time subscriptions for all tables
+    const hostelSubscription = supabase
+      .channel('hostels-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'hostels' }, () => {
+        loadData();
+      })
+      .subscribe();
+
+    const floorSubscription = supabase
+      .channel('floors-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'floors' }, () => {
+        loadData();
+      })
+      .subscribe();
+
+    const roomSubscription = supabase
+      .channel('rooms-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms' }, () => {
+        loadData();
+      })
+      .subscribe();
+
+    const studentSubscription = supabase
+      .channel('students-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'students' }, () => {
+        loadData();
+      })
+      .subscribe();
+
+    const paymentSubscription = supabase
+      .channel('payments-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, () => {
+        loadData();
+      })
+      .subscribe();
+
+    // Cleanup subscriptions on unmount
+    return () => {
+      supabase.removeChannel(hostelSubscription);
+      supabase.removeChannel(floorSubscription);
+      supabase.removeChannel(roomSubscription);
+      supabase.removeChannel(studentSubscription);
+      supabase.removeChannel(paymentSubscription);
+    };
   }, []);
 
   const refreshData = async () => {
@@ -227,6 +276,7 @@ export function HostelProvider({ children }: { children: ReactNode }) {
             capacity: 0, // Section itself doesn't hold students
             monthly_rent: 0,
             room_type: 'section',
+            occupancy_type: room.occupancyType || 'students',
             wing: room.wing || null,
             parent_room_id: null
           }])
@@ -245,6 +295,7 @@ export function HostelProvider({ children }: { children: ReactNode }) {
             capacity: room.capacity || 10,
             monthly_rent: 0, // Halls don't have rent
             room_type: 'hall',
+            occupancy_type: room.occupancyType || 'students',
             wing: room.wing || null,
             parent_room_id: sectionId,
             has_attached_bathroom: false
@@ -263,6 +314,7 @@ export function HostelProvider({ children }: { children: ReactNode }) {
               capacity: 3, // Default capacity
               monthly_rent: 5000, // Default rent (can be edited later)
               room_type: 'room',
+              occupancy_type: room.occupancyType || 'students',
               wing: room.wing || null,
               parent_room_id: sectionId,
               has_attached_bathroom: false
@@ -285,6 +337,7 @@ export function HostelProvider({ children }: { children: ReactNode }) {
             capacity: room.capacity,
             monthly_rent: room.monthlyRent,
             room_type: room.roomType || 'room',
+            occupancy_type: room.occupancyType || 'students',
             wing: room.wing || null,
             parent_room_id: room.parentRoomId || null,
             has_attached_bathroom: room.hasAttachedBathroom || false
@@ -338,7 +391,10 @@ export function HostelProvider({ children }: { children: ReactNode }) {
         email: student.email || null,
         emergency_contact: student.emergencyContact || null,
         join_date: student.joinDate || new Date().toISOString(),
-        monthly_rent: student.monthlyRent
+        monthly_rent: student.monthlyRent,
+        payment_cycle: student.paymentCycle || 'monthly',
+        custom_days: student.customDays || null,
+        next_payment_due: student.nextPaymentDue || null
       }]);
 
     if (error) throw error;

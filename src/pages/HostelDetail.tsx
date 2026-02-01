@@ -7,7 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Building2, Plus, ArrowLeft, Trash2, Layers, DoorOpen, Users, IndianRupee } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Building2, Plus, ArrowLeft, Trash2, Layers, DoorOpen, Users, IndianRupee, Pencil } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
@@ -16,7 +17,7 @@ import { RoomCard } from '@/components/RoomCard';
 const HostelDetail = () => {
   const { hostelId } = useParams();
   const navigate = useNavigate();
-  const { hostels, addFloor, deleteFloor, addRoom, deleteRoom, addStudent, deleteStudent, payments, recordPayment } = useHostel();
+  const { hostels, addFloor, deleteFloor, addRoom, deleteRoom, addStudent, deleteStudent, updateStudent, updateRoom, updateHostel, payments, recordPayment } = useHostel();
   const { toast } = useToast();
 
   const hostel = hostels.find(h => h.id === hostelId);
@@ -26,16 +27,38 @@ const HostelDetail = () => {
 
   const [isAddRoomOpen, setIsAddRoomOpen] = useState(false);
   const [selectedFloorId, setSelectedFloorId] = useState('');
-  const [roomData, setRoomData] = useState({ roomNumber: '', capacity: '', monthlyRent: '' });
+  const [roomData, setRoomData] = useState({ 
+    roomNumber: '', 
+    capacity: '', 
+    monthlyRent: '',
+    roomType: 'room', // 'room' or 'section'
+    occupancyType: 'students', // 'students' or 'family'
+    wing: '',
+    hallName: '',
+    hallCapacity: '',
+    numberOfRooms: ''
+  });
 
   const [isAddStudentOpen, setIsAddStudentOpen] = useState(false);
   const [selectedRoomId, setSelectedRoomId] = useState('');
   const [studentData, setStudentData] = useState({
-    name: '', phone: '', email: '', emergencyContact: '', monthlyRent: ''
+    name: '', phone: '', email: '', emergencyContact: '', monthlyRent: '', 
+    joinDate: new Date().toISOString().split('T')[0],
+    paymentCycle: 'monthly',
+    customDays: ''
   });
 
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [isStudentDetailsOpen, setIsStudentDetailsOpen] = useState(false);
+
+  const [editingStudent, setEditingStudent] = useState<any>(null);
+  const [editStudentData, setEditStudentData] = useState({ name: '', phone: '', email: '', emergencyContact: '', monthlyRent: '' });
+  
+  const [editingRoom, setEditingRoom] = useState<any>(null);
+  const [editRoomData, setEditRoomData] = useState({ roomNumber: '', capacity: '', monthlyRent: '' });
+  
+  const [editingHostel, setEditingHostel] = useState(false);
+  const [editHostelData, setEditHostelData] = useState({ name: '', address: '' });
 
   const currentMonth = format(new Date(), 'yyyy-MM');
 
@@ -67,23 +90,59 @@ const HostelDetail = () => {
   };
 
   const handleAddRoom = () => {
-    if (!roomData.roomNumber.trim() || !roomData.capacity || !roomData.monthlyRent) {
-      toast({ title: "Please fill all fields", variant: "destructive" });
-      return;
+    if (roomData.roomType === 'section') {
+      // Validate section fields
+      if (!roomData.wing.trim() || !roomData.hallName.trim() || !roomData.hallCapacity || !roomData.numberOfRooms) {
+        toast({ title: "Please fill all section fields", variant: "destructive" });
+        return;
+      }
+      
+      addRoom(hostel.id, selectedFloorId, {
+        roomNumber: roomData.hallName,
+        capacity: parseInt(roomData.hallCapacity),
+        monthlyRent: parseInt(roomData.numberOfRooms), // Temporarily using this field for number of rooms
+        roomType: 'section',
+        occupancyType: roomData.occupancyType as 'students' | 'family',
+        wing: roomData.wing
+      });
+    } else {
+      // Regular room validation
+      if (!roomData.roomNumber.trim() || !roomData.capacity || !roomData.monthlyRent) {
+        toast({ title: "Please fill all fields", variant: "destructive" });
+        return;
+      }
+      
+      addRoom(hostel.id, selectedFloorId, {
+        roomNumber: roomData.roomNumber,
+        capacity: parseInt(roomData.capacity),
+        monthlyRent: parseInt(roomData.monthlyRent),
+        occupancyType: roomData.occupancyType as 'students' | 'family'
+      });
     }
-    addRoom(hostel.id, selectedFloorId, {
-      roomNumber: roomData.roomNumber,
-      capacity: parseInt(roomData.capacity),
-      monthlyRent: parseInt(roomData.monthlyRent)
+    
+    setRoomData({ 
+      roomNumber: '', 
+      capacity: '', 
+      monthlyRent: '',
+      roomType: 'room',
+      occupancyType: 'students',
+      wing: '',
+      hallName: '',
+      hallCapacity: '',
+      numberOfRooms: ''
     });
-    setRoomData({ roomNumber: '', capacity: '', monthlyRent: '' });
     setIsAddRoomOpen(false);
-    toast({ title: "Room added successfully!" });
+    toast({ title: roomData.roomType === 'section' ? "Section added successfully!" : "Room added successfully!" });
   };
 
   const handleAddStudent = () => {
     if (!studentData.name.trim() || !studentData.phone.trim() || !studentData.monthlyRent) {
       toast({ title: "Please fill required fields", variant: "destructive" });
+      return;
+    }
+
+    if (studentData.paymentCycle === 'custom' && (!studentData.customDays || parseInt(studentData.customDays) <= 0)) {
+      toast({ title: "Please enter valid custom days", variant: "destructive" });
       return;
     }
 
@@ -110,15 +169,37 @@ const HostelDetail = () => {
       return;
     }
 
+    // Calculate next payment due date
+    const joinDate = new Date(studentData.joinDate);
+    let nextPaymentDue: Date;
+    
+    if (studentData.paymentCycle === 'custom') {
+      const customDays = parseInt(studentData.customDays);
+      nextPaymentDue = new Date(joinDate);
+      nextPaymentDue.setDate(nextPaymentDue.getDate() + customDays);
+    } else {
+      // Monthly cycle - add 1 month
+      nextPaymentDue = new Date(joinDate);
+      nextPaymentDue.setMonth(nextPaymentDue.getMonth() + 1);
+    }
+
     addStudent(hostel.id, floor.id, selectedRoomId, {
       name: studentData.name,
       phone: studentData.phone,
       email: studentData.email || undefined,
       emergencyContact: studentData.emergencyContact || undefined,
-      joinDate: new Date().toISOString(),
-      monthlyRent: parseInt(studentData.monthlyRent)
+      joinDate: studentData.joinDate,
+      monthlyRent: parseInt(studentData.monthlyRent),
+      paymentCycle: studentData.paymentCycle as 'monthly' | 'custom',
+      customDays: studentData.paymentCycle === 'custom' ? parseInt(studentData.customDays) : undefined,
+      nextPaymentDue: nextPaymentDue.toISOString()
     });
-    setStudentData({ name: '', phone: '', email: '', emergencyContact: '', monthlyRent: '' });
+    setStudentData({ 
+      name: '', phone: '', email: '', emergencyContact: '', monthlyRent: '',
+      joinDate: new Date().toISOString().split('T')[0],
+      paymentCycle: 'monthly',
+      customDays: ''
+    });
     setIsAddStudentOpen(false);
     toast({ title: "Student added successfully!" });
   };
@@ -155,6 +236,101 @@ const HostelDetail = () => {
     setIsStudentDetailsOpen(true);
   };
 
+  // Recursive function to count all students in a room and its sub-rooms
+  const countStudentsInRoom = (room: any): number => {
+    let count = room.students?.length || 0;
+    if (room.subRooms && room.subRooms.length > 0) {
+      count += room.subRooms.reduce((acc: number, subRoom: any) => acc + countStudentsInRoom(subRoom), 0);
+    }
+    return count;
+  };
+
+  const openEditStudent = (student: any, hostelId: string, floorId: string) => {
+    setEditingStudent({ ...student, hostelId, floorId });
+    setEditStudentData({
+      name: student.name,
+      phone: student.phone,
+      email: student.email || '',
+      emergencyContact: student.emergencyContact || '',
+      monthlyRent: student.monthlyRent.toString()
+    });
+  };
+
+  const handleEditStudent = async () => {
+    if (!editStudentData.name.trim() || !editStudentData.phone.trim() || !editStudentData.monthlyRent) {
+      toast({ title: "Please fill required fields", variant: "destructive" });
+      return;
+    }
+
+    try {
+      await updateStudent(editingStudent.hostelId, editingStudent.floorId, editingStudent.roomId, editingStudent.id, {
+        name: editStudentData.name,
+        phone: editStudentData.phone,
+        email: editStudentData.email || undefined,
+        emergencyContact: editStudentData.emergencyContact || undefined,
+        monthlyRent: parseInt(editStudentData.monthlyRent)
+      });
+      setEditingStudent(null);
+      toast({ title: "Student updated successfully!" });
+    } catch (error) {
+      toast({ title: "Failed to update student", variant: "destructive" });
+    }
+  };
+
+  const openEditRoom = (room: any, hostelId: string, floorId: string) => {
+    setEditingRoom({ ...room, hostelId, floorId });
+    setEditRoomData({
+      roomNumber: room.roomNumber,
+      capacity: room.capacity.toString(),
+      monthlyRent: room.monthlyRent.toString()
+    });
+  };
+
+  const handleEditRoom = async () => {
+    if (!editRoomData.roomNumber.trim() || !editRoomData.capacity || !editRoomData.monthlyRent) {
+      toast({ title: "Please fill all fields", variant: "destructive" });
+      return;
+    }
+
+    try {
+      await updateRoom(editingRoom.hostelId, editingRoom.floorId, editingRoom.id, {
+        roomNumber: editRoomData.roomNumber,
+        capacity: parseInt(editRoomData.capacity),
+        monthlyRent: parseInt(editRoomData.monthlyRent)
+      });
+      setEditingRoom(null);
+      toast({ title: "Room updated successfully!" });
+    } catch (error) {
+      toast({ title: "Failed to update room", variant: "destructive" });
+    }
+  };
+
+  const openEditHostel = () => {
+    setEditingHostel(true);
+    setEditHostelData({
+      name: hostel.name,
+      address: hostel.address
+    });
+  };
+
+  const handleEditHostel = async () => {
+    if (!editHostelData.name.trim() || !editHostelData.address.trim()) {
+      toast({ title: "Please fill all fields", variant: "destructive" });
+      return;
+    }
+
+    try {
+      await updateHostel(hostel.id, {
+        name: editHostelData.name,
+        address: editHostelData.address
+      });
+      setEditingHostel(false);
+      toast({ title: "Hostel updated successfully!" });
+    } catch (error) {
+      toast({ title: "Failed to update hostel", variant: "destructive" });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-muted/30">
       <header className="bg-background border-b sticky top-0 z-10">
@@ -169,6 +345,10 @@ const HostelDetail = () => {
               <p className="text-sm text-muted-foreground">{hostel.address}</p>
             </div>
           </div>
+          <Button variant="outline" size="sm" onClick={openEditHostel}>
+            <Pencil className="w-4 h-4 mr-2" />
+            Edit Hostel
+          </Button>
         </div>
       </header>
 
@@ -195,7 +375,7 @@ const HostelDetail = () => {
             <CardContent className="pt-4 text-center">
               <Users className="w-5 h-5 mx-auto text-muted-foreground" />
               <p className="text-2xl font-bold mt-1">
-                {hostel.floors.reduce((a, f) => a + f.rooms.reduce((r, room) => r + room.students.length, 0), 0)}
+                {hostel.floors.reduce((a, f) => a + f.rooms.reduce((r, room) => r + countStudentsInRoom(room), 0), 0)}
               </p>
               <p className="text-xs text-muted-foreground">Students</p>
             </CardContent>
@@ -257,7 +437,7 @@ const HostelDetail = () => {
                   <AccordionContent className="px-4 pb-4">
                     <div className="flex justify-between items-center mb-3">
                       <span className="text-sm text-muted-foreground">
-                        {floor.rooms.reduce((a, r) => a + r.students.length, 0)} students total
+                        {floor.rooms.reduce((a, r) => a + countStudentsInRoom(r), 0)} students total
                       </span>
                       <div className="flex gap-2">
                         <Button size="sm" variant="outline" onClick={() => openAddRoom(floor.id)}>
@@ -293,8 +473,8 @@ const HostelDetail = () => {
                             onAddStudent={openAddStudent}
                             onDeleteRoom={deleteRoom}
                             onDeleteStudent={deleteStudent}
-                            onStudentClick={handleStudentClick}
-                            toast={toast}
+                            onStudentClick={handleStudentClick}                              onEditStudent={openEditStudent}
+                              onEditRoom={openEditRoom}                            toast={toast}
                           />
                         ))}
                       </div>
@@ -307,42 +487,134 @@ const HostelDetail = () => {
 
         {/* Add Room Dialog */}
         <Dialog open={isAddRoomOpen} onOpenChange={setIsAddRoomOpen}>
-          <DialogContent>
+          <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Add Room</DialogTitle>
+              <DialogTitle>Add Room/Section</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 pt-4">
+              {/* Room Type Selection */}
               <div className="space-y-2">
-                <Label>Room Number</Label>
-                <Input
-                  placeholder="e.g., 101"
-                  value={roomData.roomNumber}
-                  onChange={(e) => setRoomData(prev => ({ ...prev, roomNumber: e.target.value }))}
-                />
+                <Label>Room Type *</Label>
+                <Select 
+                  value={roomData.roomType} 
+                  onValueChange={(value) => setRoomData(prev => ({ ...prev, roomType: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select room type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="room">Simple Room</SelectItem>
+                    <SelectItem value="section">Section (with Hall & Rooms)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Capacity</Label>
-                  <Input
-                    type="number"
-                    min="1"
-                    placeholder="e.g., 3"
-                    value={roomData.capacity}
-                    onChange={(e) => setRoomData(prev => ({ ...prev, capacity: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Monthly Rent (₹)</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    placeholder="e.g., 5000"
-                    value={roomData.monthlyRent}
-                    onChange={(e) => setRoomData(prev => ({ ...prev, monthlyRent: e.target.value }))}
-                  />
-                </div>
+
+              {/* Occupancy Type Selection */}
+              <div className="space-y-2">
+                <Label>Occupancy Type *</Label>
+                <Select 
+                  value={roomData.occupancyType} 
+                  onValueChange={(value) => setRoomData(prev => ({ ...prev, occupancyType: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Who can occupy?" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="students">👨‍🎓 Students</SelectItem>
+                    <SelectItem value="family">👨‍👩‍👧‍👦 Family</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  {roomData.occupancyType === 'family' 
+                    ? 'This room is designated for families' 
+                    : 'This room is designated for students'}
+                </p>
               </div>
-              <Button onClick={handleAddRoom} className="w-full">Add Room</Button>
+
+              {roomData.roomType === 'section' ? (
+                // Section Fields
+                <>
+                  <div className="space-y-2">
+                    <Label>Section/Wing Name *</Label>
+                    <Input
+                      placeholder="e.g., A-Wing, B-Wing, Part 1"
+                      value={roomData.wing}
+                      onChange={(e) => setRoomData(prev => ({ ...prev, wing: e.target.value }))}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>Hall Name *</Label>
+                    <Input
+                      placeholder="e.g., Main Hall, Common Hall"
+                      value={roomData.hallName}
+                      onChange={(e) => setRoomData(prev => ({ ...prev, hallName: e.target.value }))}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Hall Capacity *</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      placeholder="e.g., 10"
+                      value={roomData.hallCapacity}
+                      onChange={(e) => setRoomData(prev => ({ ...prev, hallCapacity: e.target.value }))}
+                    />
+                    <p className="text-xs text-muted-foreground">Number of people the hall can accommodate</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Number of Sub-Rooms *</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      placeholder="e.g., 3"
+                      value={roomData.numberOfRooms}
+                      onChange={(e) => setRoomData(prev => ({ ...prev, numberOfRooms: e.target.value }))}
+                    />
+                    <p className="text-xs text-muted-foreground">Number of individual rooms in this section</p>
+                  </div>
+                </>
+              ) : (
+                // Simple Room Fields
+                <>
+                  <div className="space-y-2">
+                    <Label>Room Number *</Label>
+                    <Input
+                      placeholder="e.g., 101"
+                      value={roomData.roomNumber}
+                      onChange={(e) => setRoomData(prev => ({ ...prev, roomNumber: e.target.value }))}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Capacity *</Label>
+                      <Input
+                        type="number"
+                        min="1"
+                        placeholder="e.g., 3"
+                        value={roomData.capacity}
+                        onChange={(e) => setRoomData(prev => ({ ...prev, capacity: e.target.value }))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Monthly Rent (₹) *</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        placeholder="e.g., 5000"
+                        value={roomData.monthlyRent}
+                        onChange={(e) => setRoomData(prev => ({ ...prev, monthlyRent: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+              
+              <Button onClick={handleAddRoom} className="w-full">
+                {roomData.roomType === 'section' ? 'Add Section' : 'Add Room'}
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -387,6 +659,44 @@ const HostelDetail = () => {
                   onChange={(e) => setStudentData(prev => ({ ...prev, emergencyContact: e.target.value }))}
                 />
               </div>
+              <div className="space-y-2">
+                <Label>Join Date *</Label>
+                <Input
+                  type="date"
+                  value={studentData.joinDate}
+                  onChange={(e) => setStudentData(prev => ({ ...prev, joinDate: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Payment Cycle *</Label>
+                <Select 
+                  value={studentData.paymentCycle} 
+                  onValueChange={(value) => setStudentData(prev => ({ ...prev, paymentCycle: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select payment cycle" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="monthly">Monthly (30 days)</SelectItem>
+                    <SelectItem value="custom">Custom Days</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {studentData.paymentCycle === 'custom' && (
+                <div className="space-y-2">
+                  <Label>Number of Days *</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    placeholder="e.g., 10, 20, 45"
+                    value={studentData.customDays}
+                    onChange={(e) => setStudentData(prev => ({ ...prev, customDays: e.target.value }))}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Payment will be due after {studentData.customDays || '0'} days from join date
+                  </p>
+                </div>
+              )}
               <div className="space-y-2">
                 <Label>Monthly Rent (₹) *</Label>
                 <Input
@@ -451,7 +761,127 @@ const HostelDetail = () => {
           </DialogContent>
         </Dialog>
       </main>
-    </div>
+      {/* Edit Student Dialog */}
+      <Dialog open={!!editingStudent} onOpenChange={(open) => !open && setEditingStudent(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Student</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Name *</Label>
+              <Input
+                value={editStudentData.name}
+                onChange={(e) => setEditStudentData({ ...editStudentData, name: e.target.value })}
+                placeholder="Student name"
+              />
+            </div>
+            <div>
+              <Label>Phone *</Label>
+              <Input
+                value={editStudentData.phone}
+                onChange={(e) => setEditStudentData({ ...editStudentData, phone: e.target.value })}
+                placeholder="Phone number"
+              />
+            </div>
+            <div>
+              <Label>Email</Label>
+              <Input
+                type="email"
+                value={editStudentData.email}
+                onChange={(e) => setEditStudentData({ ...editStudentData, email: e.target.value })}
+                placeholder="Email address"
+              />
+            </div>
+            <div>
+              <Label>Emergency Contact</Label>
+              <Input
+                value={editStudentData.emergencyContact}
+                onChange={(e) => setEditStudentData({ ...editStudentData, emergencyContact: e.target.value })}
+                placeholder="Emergency contact number"
+              />
+            </div>
+            <div>
+              <Label>Monthly Rent *</Label>
+              <Input
+                type="number"
+                value={editStudentData.monthlyRent}
+                onChange={(e) => setEditStudentData({ ...editStudentData, monthlyRent: e.target.value })}
+                placeholder="Monthly rent amount"
+              />
+            </div>
+            <Button onClick={handleEditStudent} className="w-full">Update Student</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Room Dialog */}
+      <Dialog open={!!editingRoom} onOpenChange={(open) => !open && setEditingRoom(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Room</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Room Number *</Label>
+              <Input
+                value={editRoomData.roomNumber}
+                onChange={(e) => setEditRoomData({ ...editRoomData, roomNumber: e.target.value })}
+                placeholder="e.g., 101"
+              />
+            </div>
+            <div>
+              <Label>Capacity *</Label>
+              <Input
+                type="number"
+                value={editRoomData.capacity}
+                onChange={(e) => setEditRoomData({ ...editRoomData, capacity: e.target.value })}
+                placeholder="e.g., 3"
+                min="1"
+              />
+            </div>
+            <div>
+              <Label>Monthly Rent (₹) *</Label>
+              <Input
+                type="number"
+                value={editRoomData.monthlyRent}
+                onChange={(e) => setEditRoomData({ ...editRoomData, monthlyRent: e.target.value })}
+                placeholder="e.g., 5000"
+                min="0"
+              />
+            </div>
+            <Button onClick={handleEditRoom} className="w-full">Update Room</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Hostel Dialog */}
+      <Dialog open={editingHostel} onOpenChange={setEditingHostel}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Hostel</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Hostel Name *</Label>
+              <Input
+                value={editHostelData.name}
+                onChange={(e) => setEditHostelData({ ...editHostelData, name: e.target.value })}
+                placeholder="Hostel name"
+              />
+            </div>
+            <div>
+              <Label>Address *</Label>
+              <Input
+                value={editHostelData.address}
+                onChange={(e) => setEditHostelData({ ...editHostelData, address: e.target.value })}
+                placeholder="Full address"
+              />
+            </div>
+            <Button onClick={handleEditHostel} className="w-full">Update Hostel</Button>
+          </div>
+        </DialogContent>
+      </Dialog>    </div>
   );
 };
 

@@ -7,6 +7,9 @@ export interface Student {
   joinDate: string;
   monthlyRent: number;
   roomId: string;
+  paymentCycle?: 'monthly' | 'custom'; // Payment cycle type
+  customDays?: number; // Number of days if custom cycle
+  nextPaymentDue?: string; // Next payment due date
 }
 
 export interface Payment {
@@ -25,6 +28,7 @@ export interface Room {
   capacity: number;
   monthlyRent: number;
   roomType?: 'hall' | 'room' | 'section';
+  occupancyType?: 'students' | 'family'; // Who can occupy this room
   wing?: string;
   parentRoomId?: string;
   hasAttachedBathroom?: boolean;

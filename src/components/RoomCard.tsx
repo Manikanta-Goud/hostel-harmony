@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { DoorOpen, Users, Trash2, Plus, ChevronDown, ChevronRight, Home } from 'lucide-react';
+import { DoorOpen, Users, Trash2, Plus, ChevronDown, ChevronRight, Home, Pencil } from 'lucide-react';
 import { Room } from '@/types/hostel';
 
 interface RoomCardProps {
@@ -13,6 +13,8 @@ interface RoomCardProps {
     onDeleteRoom: (hostelId: string, floorId: string, roomId: string) => void;
     onDeleteStudent: (hostelId: string, floorId: string, roomId: string, studentId: string) => void;
     onStudentClick?: (student: any) => void;
+    onEditStudent?: (student: any, hostelId: string, floorId: string) => void;
+    onEditRoom?: (room: any, hostelId: string, floorId: string) => void;
     toast: any;
     level?: number;
 }
@@ -25,6 +27,8 @@ export function RoomCard({
     onDeleteRoom,
     onDeleteStudent,
     onStudentClick,
+    onEditStudent,
+    onEditRoom,
     toast,
     level = 0
 }: RoomCardProps) {
@@ -90,6 +94,17 @@ export function RoomCard({
                                 <span className="text-sm text-muted-foreground">₹{room.monthlyRent}/month</span>
                             )}
 
+                            {room.roomType !== 'section' && onEditRoom && (
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => onEditRoom(room, hostelId, floorId)}
+                                    title="Edit Room"
+                                >
+                                    <Pencil className="w-3 h-3" />
+                                </Button>
+                            )}
+
                             {room.roomType !== 'section' && (
                                 <Button
                                     size="sm"
@@ -142,6 +157,20 @@ export function RoomCard({
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <span className="text-xs text-muted-foreground">₹{student.monthlyRent}/mo</span>
+                                        {onEditStudent && (
+                                            <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                className="h-6 w-6 p-0"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    onEditStudent(student, hostelId, floorId);
+                                                }}
+                                                title="Edit Student"
+                                            >
+                                                <Pencil className="w-3 h-3" />
+                                            </Button>
+                                        )}
                                         <Button
                                             size="sm"
                                             variant="ghost"
@@ -178,6 +207,8 @@ export function RoomCard({
                             onDeleteRoom={onDeleteRoom}
                             onDeleteStudent={onDeleteStudent}
                             onStudentClick={onStudentClick}
+                            onEditStudent={onEditStudent}
+                            onEditRoom={onEditRoom}
                             toast={toast}
                             level={level + 1}
                         />
