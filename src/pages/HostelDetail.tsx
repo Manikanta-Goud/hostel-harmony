@@ -11,6 +11,7 @@ import { Building2, Plus, ArrowLeft, Trash2, Layers, DoorOpen, Users, IndianRupe
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
+import { RoomCard } from '@/components/RoomCard';
 
 const HostelDetail = () => {
   const { hostelId } = useParams();
@@ -19,19 +20,22 @@ const HostelDetail = () => {
   const { toast } = useToast();
 
   const hostel = hostels.find(h => h.id === hostelId);
-  
+
   const [isAddFloorOpen, setIsAddFloorOpen] = useState(false);
   const [floorNumber, setFloorNumber] = useState('');
-  
+
   const [isAddRoomOpen, setIsAddRoomOpen] = useState(false);
   const [selectedFloorId, setSelectedFloorId] = useState('');
   const [roomData, setRoomData] = useState({ roomNumber: '', capacity: '', monthlyRent: '' });
-  
+
   const [isAddStudentOpen, setIsAddStudentOpen] = useState(false);
   const [selectedRoomId, setSelectedRoomId] = useState('');
   const [studentData, setStudentData] = useState({
     name: '', phone: '', email: '', emergencyContact: '', monthlyRent: ''
   });
+
+  const [selectedStudent, setSelectedStudent] = useState<any>(null);
+  const [isStudentDetailsOpen, setIsStudentDetailsOpen] = useState(false);
 
   const currentMonth = format(new Date(), 'yyyy-MM');
 
@@ -82,9 +86,30 @@ const HostelDetail = () => {
       toast({ title: "Please fill required fields", variant: "destructive" });
       return;
     }
-    const floor = hostel.floors.find(f => f.rooms.some(r => r.id === selectedRoomId));
-    if (!floor) return;
-    
+
+    // Recursive function to find room in hierarchy
+    const findRoom = (rooms: any[]): any => {
+      for (const room of rooms) {
+        if (room.id === selectedRoomId) return room;
+        if (room.subRooms && room.subRooms.length > 0) {
+          const found = findRoom(room.subRooms);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+
+    // Find the floor containing the room
+    const floor = hostel.floors.find(f => {
+      const room = findRoom(f.rooms);
+      return room !== null;
+    });
+
+    if (!floor) {
+      toast({ title: "Error: Floor not found", variant: "destructive" });
+      return;
+    }
+
     addStudent(hostel.id, floor.id, selectedRoomId, {
       name: studentData.name,
       phone: studentData.phone,
@@ -123,6 +148,11 @@ const HostelDetail = () => {
     setSelectedRoomId(roomId);
     setStudentData(prev => ({ ...prev, monthlyRent: defaultRent.toString() }));
     setIsAddStudentOpen(true);
+  };
+
+  const handleStudentClick = (student: any) => {
+    setSelectedStudent(student);
+    setIsStudentDetailsOpen(true);
   };
 
   return (
@@ -234,9 +264,9 @@ const HostelDetail = () => {
                           <Plus className="w-3 h-3 mr-1" />
                           Add Room
                         </Button>
-                        <Button 
-                          size="sm" 
-                          variant="ghost" 
+                        <Button
+                          size="sm"
+                          variant="ghost"
                           className="text-destructive"
                           onClick={() => {
                             if (confirm('Delete this floor and all its rooms?')) {
@@ -255,90 +285,17 @@ const HostelDetail = () => {
                     ) : (
                       <div className="space-y-3">
                         {floor.rooms.map(room => (
-                          <Card key={room.id} className="bg-muted/50">
-                            <CardHeader className="py-3 px-4">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  <DoorOpen className="w-4 h-4 text-primary" />
-                                  <CardTitle className="text-base">Room {room.roomNumber}</CardTitle>
-                                  <Badge variant={room.students.length >= room.capacity ? "destructive" : "outline"}>
-                                    {room.students.length}/{room.capacity}
-                                  </Badge>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-sm text-muted-foreground">₹{room.monthlyRent}/month</span>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    disabled={room.students.length >= room.capacity}
-                                    onClick={() => openAddStudent(room.id, room.monthlyRent)}
-                                  >
-                                    <Plus className="w-3 h-3" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="text-destructive"
-                                    onClick={() => {
-                                      if (confirm('Delete this room?')) {
-                                        deleteRoom(hostel.id, floor.id, room.id);
-                                        toast({ title: "Room deleted" });
-                                      }
-                                    }}
-                                  >
-                                    <Trash2 className="w-3 h-3" />
-                                  </Button>
-                                </div>
-                              </div>
-                            </CardHeader>
-                            {room.students.length > 0 && (
-                              <CardContent className="py-2 px-4">
-                                <div className="space-y-2">
-                                  {room.students.map(student => {
-                                    const status = getPaymentStatus(student.id);
-                                    return (
-                                      <div 
-                                        key={student.id} 
-                                        className="flex items-center justify-between py-2 px-3 rounded-md bg-background"
-                                      >
-                                        <div className="flex items-center gap-3">
-                                          <Users className="w-4 h-4 text-muted-foreground" />
-                                          <div>
-                                            <p className="font-medium text-sm">{student.name}</p>
-                                            <p className="text-xs text-muted-foreground">{student.phone}</p>
-                                          </div>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                          <Button
-                                            size="sm"
-                                            variant={status === 'paid' ? 'default' : 'outline'}
-                                            className={status === 'paid' ? 'bg-green-600 hover:bg-green-700' : ''}
-                                            onClick={() => handlePaymentToggle(student.id, student.monthlyRent)}
-                                          >
-                                            <IndianRupee className="w-3 h-3 mr-1" />
-                                            {status === 'paid' ? 'Paid' : `₹${student.monthlyRent}`}
-                                          </Button>
-                                          <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            className="text-destructive"
-                                            onClick={() => {
-                                              if (confirm(`Remove ${student.name}?`)) {
-                                                deleteStudent(hostel.id, floor.id, room.id, student.id);
-                                                toast({ title: "Student removed" });
-                                              }
-                                            }}
-                                          >
-                                            <Trash2 className="w-3 h-3" />
-                                          </Button>
-                                        </div>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              </CardContent>
-                            )}
-                          </Card>
+                          <RoomCard
+                            key={room.id}
+                            room={room}
+                            hostelId={hostel.id}
+                            floorId={floor.id}
+                            onAddStudent={openAddStudent}
+                            onDeleteRoom={deleteRoom}
+                            onDeleteStudent={deleteStudent}
+                            onStudentClick={handleStudentClick}
+                            toast={toast}
+                          />
                         ))}
                       </div>
                     )}
@@ -441,6 +398,56 @@ const HostelDetail = () => {
               </div>
               <Button onClick={handleAddStudent} className="w-full">Add Student</Button>
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Student Details Dialog */}
+        <Dialog open={isStudentDetailsOpen} onOpenChange={setIsStudentDetailsOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Student Details</DialogTitle>
+            </DialogHeader>
+            {selectedStudent && (
+              <div className="space-y-4 pt-4">
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg">{selectedStudent.name}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="font-medium text-muted-foreground w-32">Phone:</span>
+                      <span>{selectedStudent.phone}</span>
+                    </div>
+                    {selectedStudent.email && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="font-medium text-muted-foreground w-32">Email:</span>
+                        <span>{selectedStudent.email}</span>
+                      </div>
+                    )}
+                    {selectedStudent.emergencyContact && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="font-medium text-muted-foreground w-32">Emergency:</span>
+                        <span>{selectedStudent.emergencyContact}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="font-medium text-muted-foreground w-32">Join Date:</span>
+                      <span>{format(new Date(selectedStudent.joinDate), 'dd MMM yyyy')}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="font-medium text-muted-foreground w-32">Monthly Rent:</span>
+                      <span className="font-semibold text-primary">₹{selectedStudent.monthlyRent}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Button
+                  onClick={() => setIsStudentDetailsOpen(false)}
+                  className="w-full"
+                >
+                  Close
+                </Button>
+              </div>
+            )}
           </DialogContent>
         </Dialog>
       </main>

@@ -24,7 +24,12 @@ export interface Room {
   floorId: string;
   capacity: number;
   monthlyRent: number;
+  roomType?: 'hall' | 'room' | 'section';
+  wing?: string;
+  parentRoomId?: string;
+  hasAttachedBathroom?: boolean;
   students: Student[];
+  subRooms?: Room[]; // Child rooms for sections
 }
 
 export interface Floor {
@@ -36,8 +41,10 @@ export interface Floor {
 
 export interface Hostel {
   id: string;
+  ownerId: string;
   name: string;
   address: string;
+  totalCapacity?: number;
   floors: Floor[];
 }
 

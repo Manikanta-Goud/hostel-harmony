@@ -13,37 +13,52 @@ const Hostels = () => {
   const { hostels, addHostel, updateHostel, deleteHostel } = useHostel();
   const navigate = useNavigate();
   const { toast } = useToast();
-  
+
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingHostel, setEditingHostel] = useState<string | null>(null);
   const [formData, setFormData] = useState({ name: '', address: '' });
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!formData.name.trim() || !formData.address.trim()) {
       toast({ title: "Please fill all fields", variant: "destructive" });
       return;
     }
-    addHostel(formData);
-    setFormData({ name: '', address: '' });
-    setIsAddOpen(false);
-    toast({ title: "Hostel added successfully!" });
+    try {
+      await addHostel({ ...formData, ownerId: 'default-owner' });
+      setFormData({ name: '', address: '' });
+      setIsAddOpen(false);
+      toast({ title: "Hostel added successfully!" });
+    } catch (error) {
+      console.error('Error adding hostel:', error);
+      toast({ title: "Failed to add hostel", description: "Please check the console for errors", variant: "destructive" });
+    }
   };
 
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
     if (!editingHostel || !formData.name.trim() || !formData.address.trim()) {
       toast({ title: "Please fill all fields", variant: "destructive" });
       return;
     }
-    updateHostel(editingHostel, formData);
-    setFormData({ name: '', address: '' });
-    setEditingHostel(null);
-    toast({ title: "Hostel updated successfully!" });
+    try {
+      await updateHostel(editingHostel, formData);
+      setFormData({ name: '', address: '' });
+      setEditingHostel(null);
+      toast({ title: "Hostel updated successfully!" });
+    } catch (error) {
+      console.error('Error updating hostel:', error);
+      toast({ title: "Failed to update hostel", variant: "destructive" });
+    }
   };
 
-  const handleDelete = (id: string, name: string) => {
+  const handleDelete = async (id: string, name: string) => {
     if (confirm(`Are you sure you want to delete "${name}"? This will remove all floors, rooms, and students.`)) {
-      deleteHostel(id);
-      toast({ title: "Hostel deleted successfully!" });
+      try {
+        await deleteHostel(id);
+        toast({ title: "Hostel deleted successfully!" });
+      } catch (error) {
+        console.error('Error deleting hostel:', error);
+        toast({ title: "Failed to delete hostel", variant: "destructive" });
+      }
     }
   };
 
@@ -117,14 +132,14 @@ const Hostels = () => {
             {hostels.map(hostel => {
               const floors = hostel.floors.length;
               const rooms = hostel.floors.reduce((a, f) => a + f.rooms.length, 0);
-              const students = hostel.floors.reduce((a, f) => 
+              const students = hostel.floors.reduce((a, f) =>
                 a + f.rooms.reduce((r, room) => r + room.students.length, 0), 0);
-              
+
               return (
                 <Card key={hostel.id} className="group">
                   <CardHeader className="pb-2">
                     <div className="flex items-start justify-between">
-                      <div 
+                      <div
                         className="cursor-pointer flex-1"
                         onClick={() => navigate(`/hostels/${hostel.id}`)}
                       >
@@ -134,17 +149,17 @@ const Hostels = () => {
                         <p className="text-sm text-muted-foreground">{hostel.address}</p>
                       </div>
                       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           className="h-8 w-8"
                           onClick={() => openEdit(hostel)}
                         >
                           <Edit className="w-4 h-4" />
                         </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           className="h-8 w-8 text-destructive"
                           onClick={() => handleDelete(hostel.id, hostel.name)}
                         >
@@ -154,7 +169,7 @@ const Hostels = () => {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div 
+                    <div
                       className="flex gap-4 text-sm text-muted-foreground cursor-pointer"
                       onClick={() => navigate(`/hostels/${hostel.id}`)}
                     >
