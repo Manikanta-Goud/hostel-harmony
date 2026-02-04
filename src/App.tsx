@@ -10,7 +10,9 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Hostels from "./pages/Hostels";
 import HostelDetail from "./pages/HostelDetail";
+import Rooms from "./pages/Rooms";
 import Students from "./pages/Students";
+import Families from "./pages/Families";
 import Payments from "./pages/Payments";
 import ProtectedRoute from "./components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
@@ -37,8 +39,14 @@ const App = () => (
               <Route path="/hostels/:hostelId" element={
                 <ProtectedRoute><HostelDetail /></ProtectedRoute>
               } />
+              <Route path="/rooms" element={
+                <ProtectedRoute><Rooms /></ProtectedRoute>
+              } />
               <Route path="/students" element={
                 <ProtectedRoute><Students /></ProtectedRoute>
+              } />
+              <Route path="/families" element={
+                <ProtectedRoute><Families /></ProtectedRoute>
               } />
               <Route path="/payments" element={
                 <ProtectedRoute><Payments /></ProtectedRoute>

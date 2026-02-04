@@ -17,7 +17,7 @@ import { RoomCard } from '@/components/RoomCard';
 const HostelDetail = () => {
   const { hostelId } = useParams();
   const navigate = useNavigate();
-  const { hostels, addFloor, deleteFloor, addRoom, deleteRoom, addStudent, deleteStudent, updateStudent, updateRoom, updateHostel, payments, recordPayment } = useHostel();
+  const { hostels, addFloor, updateFloor, deleteFloor, addRoom, deleteRoom, addStudent, deleteStudent, updateStudent, updateRoom, updateHostel, payments, recordPayment } = useHostel();
   const { toast } = useToast();
 
   const hostel = hostels.find(h => h.id === hostelId);
@@ -27,9 +27,9 @@ const HostelDetail = () => {
 
   const [isAddRoomOpen, setIsAddRoomOpen] = useState(false);
   const [selectedFloorId, setSelectedFloorId] = useState('');
-  const [roomData, setRoomData] = useState({ 
-    roomNumber: '', 
-    capacity: '', 
+  const [roomData, setRoomData] = useState({
+    roomNumber: '',
+    capacity: '',
     monthlyRent: '',
     roomType: 'room', // 'room' or 'section'
     occupancyType: 'students', // 'students' or 'family'
@@ -42,23 +42,30 @@ const HostelDetail = () => {
   const [isAddStudentOpen, setIsAddStudentOpen] = useState(false);
   const [selectedRoomId, setSelectedRoomId] = useState('');
   const [studentData, setStudentData] = useState({
-    name: '', phone: '', email: '', emergencyContact: '', monthlyRent: '', 
+    name: '', phone: '', email: '', emergencyContact: '', monthlyRent: '',
     joinDate: new Date().toISOString().split('T')[0],
     paymentCycle: 'monthly',
-    customDays: ''
+    customDays: '',
+    memberCount: ''
   });
 
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [isStudentDetailsOpen, setIsStudentDetailsOpen] = useState(false);
 
   const [editingStudent, setEditingStudent] = useState<any>(null);
-  const [editStudentData, setEditStudentData] = useState({ name: '', phone: '', email: '', emergencyContact: '', monthlyRent: '' });
-  
+  const [editStudentData, setEditStudentData] = useState({ name: '', phone: '', email: '', emergencyContact: '', monthlyRent: '', memberCount: '' });
+
   const [editingRoom, setEditingRoom] = useState<any>(null);
-  const [editRoomData, setEditRoomData] = useState({ roomNumber: '', capacity: '', monthlyRent: '' });
-  
+  const [editRoomData, setEditRoomData] = useState({ roomNumber: '', capacity: '', monthlyRent: '', occupancyType: '' });
+
   const [editingHostel, setEditingHostel] = useState(false);
   const [editHostelData, setEditHostelData] = useState({ name: '', address: '' });
+
+  const [isEditFloorOpen, setIsEditFloorOpen] = useState(false);
+  const [editingFloor, setEditingFloor] = useState<any>(null);
+  const [newFloorNumber, setNewFloorNumber] = useState('');
+
+  const [selectedParentId, setSelectedParentId] = useState<string | null>(null);
 
   const currentMonth = format(new Date(), 'yyyy-MM');
 
@@ -96,7 +103,7 @@ const HostelDetail = () => {
         toast({ title: "Please fill all section fields", variant: "destructive" });
         return;
       }
-      
+
       addRoom(hostel.id, selectedFloorId, {
         roomNumber: roomData.hallName,
         capacity: parseInt(roomData.hallCapacity),
@@ -111,18 +118,19 @@ const HostelDetail = () => {
         toast({ title: "Please fill all fields", variant: "destructive" });
         return;
       }
-      
+
       addRoom(hostel.id, selectedFloorId, {
         roomNumber: roomData.roomNumber,
         capacity: parseInt(roomData.capacity),
         monthlyRent: parseInt(roomData.monthlyRent),
-        occupancyType: roomData.occupancyType as 'students' | 'family'
+        occupancyType: roomData.occupancyType as 'students' | 'family',
+        parentRoomId: selectedParentId || undefined
       });
     }
-    
-    setRoomData({ 
-      roomNumber: '', 
-      capacity: '', 
+
+    setRoomData({
+      roomNumber: '',
+      capacity: '',
       monthlyRent: '',
       roomType: 'room',
       occupancyType: 'students',
@@ -131,13 +139,14 @@ const HostelDetail = () => {
       hallCapacity: '',
       numberOfRooms: ''
     });
+    setSelectedParentId(null);
     setIsAddRoomOpen(false);
     toast({ title: roomData.roomType === 'section' ? "Section added successfully!" : "Room added successfully!" });
   };
 
   const handleAddStudent = () => {
-    if (!studentData.name.trim() || !studentData.phone.trim() || !studentData.monthlyRent) {
-      toast({ title: "Please fill required fields", variant: "destructive" });
+    if (!studentData.name.trim() || !studentData.monthlyRent) {
+      toast({ title: "Please fill required fields (Name & Rent)", variant: "destructive" });
       return;
     }
 
@@ -172,7 +181,7 @@ const HostelDetail = () => {
     // Calculate next payment due date
     const joinDate = new Date(studentData.joinDate);
     let nextPaymentDue: Date;
-    
+
     if (studentData.paymentCycle === 'custom') {
       const customDays = parseInt(studentData.customDays);
       nextPaymentDue = new Date(joinDate);
@@ -192,16 +201,18 @@ const HostelDetail = () => {
       monthlyRent: parseInt(studentData.monthlyRent),
       paymentCycle: studentData.paymentCycle as 'monthly' | 'custom',
       customDays: studentData.paymentCycle === 'custom' ? parseInt(studentData.customDays) : undefined,
-      nextPaymentDue: nextPaymentDue.toISOString()
+      nextPaymentDue: nextPaymentDue.toISOString(),
+      memberCount: parseInt(studentData.memberCount) || 1
     });
-    setStudentData({ 
+    setStudentData({
       name: '', phone: '', email: '', emergencyContact: '', monthlyRent: '',
       joinDate: new Date().toISOString().split('T')[0],
       paymentCycle: 'monthly',
-      customDays: ''
+      customDays: '',
+      memberCount: ''
     });
     setIsAddStudentOpen(false);
-    toast({ title: "Student added successfully!" });
+    toast({ title: "Occupant added successfully!" });
   };
 
   const handlePaymentToggle = (studentId: string, amount: number) => {
@@ -220,9 +231,66 @@ const HostelDetail = () => {
     return payment?.status || 'due';
   };
 
+  const openEditFloor = (floor: any) => {
+    setEditingFloor(floor);
+    setNewFloorNumber(floor.floorNumber.toString());
+    setIsEditFloorOpen(true);
+  };
+
+  const handleEditFloor = async () => {
+    if (!editingFloor || !newFloorNumber) return;
+    const num = parseInt(newFloorNumber);
+    if (isNaN(num)) {
+      toast({ title: "Invalid floor number", variant: "destructive" });
+      return;
+    }
+    if (hostel.floors.some(f => f.floorNumber === num && f.id !== editingFloor.id)) {
+      toast({ title: "This floor number already exists", variant: "destructive" });
+      return;
+    }
+    try {
+      await updateFloor(hostel.id, editingFloor.id, num);
+      setIsEditFloorOpen(false);
+      setEditingFloor(null);
+      toast({ title: "Floor updated successfully" });
+    } catch (error) {
+      toast({ title: "Failed to update floor", variant: "destructive" });
+    }
+  };
+
   const openAddRoom = (floorId: string) => {
     setSelectedFloorId(floorId);
+    setSelectedParentId(null);
+    setRoomData(prev => ({ ...prev, roomType: 'room' })); // Default
     setIsAddRoomOpen(true);
+  };
+
+  const openAddSubRoom = (parentId: string) => {
+    // Find the room and its floor
+    // Helper to find room by ID
+    const findRoomAndFloor = (id: string): { room: any, floor: any } | null => {
+      for (const floor of hostel.floors) {
+        const room = floor.rooms.find(r => r.id === id);
+        if (room) return { room, floor };
+        // Check subrooms if needed (though we usually add to top-level sections)
+        // If we support nested sections, we'd need recursion here.
+        // Assuming sections are top-level rooms for now or just searching flat list of that floor
+        // But room here is the section.
+      }
+      return null;
+    };
+
+    const result = findRoomAndFloor(parentId);
+    if (result) {
+      setSelectedFloorId(result.floor.id);
+      setSelectedParentId(parentId);
+      setRoomData(prev => ({
+        ...prev,
+        roomType: 'room', // Enforce adding a room, not another section
+        occupancyType: result.room.occupancyType // Inherit occupancy type
+      }));
+      setIsAddRoomOpen(true);
+    }
   };
 
   const openAddStudent = (roomId: string, defaultRent: number) => {
@@ -245,6 +313,28 @@ const HostelDetail = () => {
     return count;
   };
 
+  // Helper to count family members recursively
+  const countFamilyMembers = (room: any): number => {
+    let count = 0;
+    // Count as family if room is 'family' type OR if the occupant has > 1 members recorded
+    count += room.students?.filter((s: any) => room.occupancyType === 'family' || (s.memberCount > 1)).length || 0;
+
+    // Recursive check for sub-rooms
+    if (room.subRooms && room.subRooms.length > 0) {
+      count += room.subRooms.reduce((acc: number, subRoom: any) => acc + countFamilyMembers(subRoom), 0);
+    }
+    return count;
+  };
+
+  // Helper to count family rooms (designated space)
+  const countFamilyRooms = (room: any): number => {
+    let count = room.occupancyType === 'family' ? 1 : 0;
+    if (room.subRooms?.length > 0) {
+      count += room.subRooms.reduce((acc: number, subRoom: any) => acc + countFamilyRooms(subRoom), 0);
+    }
+    return count;
+  };
+
   const openEditStudent = (student: any, hostelId: string, floorId: string) => {
     setEditingStudent({ ...student, hostelId, floorId });
     setEditStudentData({
@@ -252,7 +342,8 @@ const HostelDetail = () => {
       phone: student.phone,
       email: student.email || '',
       emergencyContact: student.emergencyContact || '',
-      monthlyRent: student.monthlyRent.toString()
+      monthlyRent: student.monthlyRent.toString(),
+      memberCount: (student.memberCount || 1).toString()
     });
   };
 
@@ -268,7 +359,8 @@ const HostelDetail = () => {
         phone: editStudentData.phone,
         email: editStudentData.email || undefined,
         emergencyContact: editStudentData.emergencyContact || undefined,
-        monthlyRent: parseInt(editStudentData.monthlyRent)
+        monthlyRent: parseInt(editStudentData.monthlyRent),
+        memberCount: parseInt(editStudentData.memberCount) || 1
       });
       setEditingStudent(null);
       toast({ title: "Student updated successfully!" });
@@ -282,7 +374,8 @@ const HostelDetail = () => {
     setEditRoomData({
       roomNumber: room.roomNumber,
       capacity: room.capacity.toString(),
-      monthlyRent: room.monthlyRent.toString()
+      monthlyRent: room.monthlyRent.toString(),
+      occupancyType: room.occupancyType || 'students'
     });
   };
 
@@ -296,7 +389,8 @@ const HostelDetail = () => {
       await updateRoom(editingRoom.hostelId, editingRoom.floorId, editingRoom.id, {
         roomNumber: editRoomData.roomNumber,
         capacity: parseInt(editRoomData.capacity),
-        monthlyRent: parseInt(editRoomData.monthlyRent)
+        monthlyRent: parseInt(editRoomData.monthlyRent),
+        occupancyType: editRoomData.occupancyType as 'students' | 'family'
       });
       setEditingRoom(null);
       toast({ title: "Room updated successfully!" });
@@ -354,7 +448,7 @@ const HostelDetail = () => {
 
       <main className="container mx-auto px-4 py-8">
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <Card>
             <CardContent className="pt-4 text-center">
               <Layers className="w-5 h-5 mx-auto text-muted-foreground" />
@@ -377,7 +471,22 @@ const HostelDetail = () => {
               <p className="text-2xl font-bold mt-1">
                 {hostel.floors.reduce((a, f) => a + f.rooms.reduce((r, room) => r + countStudentsInRoom(room), 0), 0)}
               </p>
-              <p className="text-xs text-muted-foreground">Students</p>
+              <p className="text-xs text-muted-foreground">Students (Heads)</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4 text-center">
+              <div className="relative inline-block">
+                <Users className="w-5 h-5 mx-auto text-orange-500" />
+                <span className="absolute -top-1 -right-2 text-[10px] bg-orange-100 text-orange-600 px-1 rounded-full border border-orange-200">Family</span>
+              </div>
+              <p className="text-2xl font-bold mt-1 text-orange-600">
+                {hostel.floors.reduce((a, f) => a + f.rooms.reduce((r, room) => r + countFamilyMembers(room), 0), 0)}
+              </p>
+              <p className="text-xs text-orange-600">Families</p>
+              <p className="text-[10px] text-orange-400 mt-1">
+                {hostel.floors.reduce((a, f) => a + f.rooms.reduce((r, room) => r + countFamilyRooms(room), 0), 0)} Rooms Designated
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -444,6 +553,9 @@ const HostelDetail = () => {
                           <Plus className="w-3 h-3 mr-1" />
                           Add Room
                         </Button>
+                        <Button size="sm" variant="outline" onClick={() => openEditFloor(floor)}>
+                          <Pencil className="w-3 h-3" />
+                        </Button>
                         <Button
                           size="sm"
                           variant="ghost"
@@ -473,8 +585,8 @@ const HostelDetail = () => {
                             onAddStudent={openAddStudent}
                             onDeleteRoom={deleteRoom}
                             onDeleteStudent={deleteStudent}
-                            onStudentClick={handleStudentClick}                              onEditStudent={openEditStudent}
-                              onEditRoom={openEditRoom}                            toast={toast}
+                            onStudentClick={handleStudentClick} onEditStudent={openEditStudent}
+                            onEditRoom={openEditRoom} onAddSubRoom={openAddSubRoom} toast={toast}
                           />
                         ))}
                       </div>
@@ -489,15 +601,16 @@ const HostelDetail = () => {
         <Dialog open={isAddRoomOpen} onOpenChange={setIsAddRoomOpen}>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Add Room/Section</DialogTitle>
+              <DialogTitle>{selectedParentId ? 'Add Sub-Room' : 'Add Room/Section'}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 pt-4">
               {/* Room Type Selection */}
               <div className="space-y-2">
                 <Label>Room Type *</Label>
-                <Select 
-                  value={roomData.roomType} 
+                <Select
+                  value={roomData.roomType}
                   onValueChange={(value) => setRoomData(prev => ({ ...prev, roomType: value }))}
+                  disabled={!!selectedParentId}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select room type" />
@@ -512,8 +625,8 @@ const HostelDetail = () => {
               {/* Occupancy Type Selection */}
               <div className="space-y-2">
                 <Label>Occupancy Type *</Label>
-                <Select 
-                  value={roomData.occupancyType} 
+                <Select
+                  value={roomData.occupancyType}
                   onValueChange={(value) => setRoomData(prev => ({ ...prev, occupancyType: value }))}
                 >
                   <SelectTrigger>
@@ -525,9 +638,9 @@ const HostelDetail = () => {
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  {roomData.occupancyType === 'family' 
-                    ? 'This room is designated for families' 
-                    : 'This room is designated for students'}
+                  {roomData.occupancyType === 'family'
+                    ? 'This room is designated for families. You can track family count.'
+                    : 'This room is designated for individual students.'}
                 </p>
               </div>
 
@@ -542,7 +655,7 @@ const HostelDetail = () => {
                       onChange={(e) => setRoomData(prev => ({ ...prev, wing: e.target.value }))}
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label>Hall Name *</Label>
                     <Input
@@ -553,15 +666,19 @@ const HostelDetail = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Hall Capacity *</Label>
+                    <Label>{roomData.occupancyType === 'family' ? 'Family Capacity *' : 'Student Capacity *'}</Label>
                     <Input
                       type="number"
                       min="1"
-                      placeholder="e.g., 10"
+                      placeholder={roomData.occupancyType === 'family' ? "e.g., 2 Families" : "e.g., 10 Students"}
                       value={roomData.hallCapacity}
                       onChange={(e) => setRoomData(prev => ({ ...prev, hallCapacity: e.target.value }))}
                     />
-                    <p className="text-xs text-muted-foreground">Number of people the hall can accommodate</p>
+                    <p className="text-xs text-muted-foreground">
+                      {roomData.occupancyType === 'family'
+                        ? 'Maximum number of families this hall can accommodate'
+                        : 'Maximum number of students this hall can accommodate'}
+                    </p>
                   </div>
 
                   <div className="space-y-2">
@@ -589,11 +706,11 @@ const HostelDetail = () => {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Capacity *</Label>
+                      <Label>{roomData.occupancyType === 'family' ? 'Family Count (Max) *' : 'Student Capacity *'}</Label>
                       <Input
                         type="number"
                         min="1"
-                        placeholder="e.g., 3"
+                        placeholder="e.g., 1"
                         value={roomData.capacity}
                         onChange={(e) => setRoomData(prev => ({ ...prev, capacity: e.target.value }))}
                       />
@@ -611,7 +728,7 @@ const HostelDetail = () => {
                   </div>
                 </>
               )}
-              
+
               <Button onClick={handleAddRoom} className="w-full">
                 {roomData.roomType === 'section' ? 'Add Section' : 'Add Room'}
               </Button>
@@ -619,23 +736,67 @@ const HostelDetail = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Add Student Dialog */}
-        <Dialog open={isAddStudentOpen} onOpenChange={setIsAddStudentOpen}>
+        {/* Edit Floor Dialog */}
+        <Dialog open={isEditFloorOpen} onOpenChange={setIsEditFloorOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Add Student</DialogTitle>
+              <DialogTitle>Edit Floor</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 pt-4">
               <div className="space-y-2">
-                <Label>Name *</Label>
+                <Label>Floor Number</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={newFloorNumber}
+                  onChange={(e) => setNewFloorNumber(e.target.value)}
+                />
+              </div>
+              <Button onClick={handleEditFloor} className="w-full">Update Floor</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Add Student/Occupant Dialog */}
+        <Dialog open={isAddStudentOpen} onOpenChange={setIsAddStudentOpen}>
+          <DialogContent className="max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Add Occupant</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 pt-4">
+              <div className="space-y-2">
+                <Label>Name / Family Head Name *</Label>
                 <Input
                   placeholder="Full name"
                   value={studentData.name}
                   onChange={(e) => setStudentData(prev => ({ ...prev, name: e.target.value }))}
                 />
               </div>
+
+              {/* Show Member Count for Family Rooms */}
+              {(() => {
+                const flatRooms = hostel.floors.flatMap(f => f.rooms.concat(f.rooms.flatMap(r => r.subRooms || [])));
+                const r = flatRooms.find(room => room.id === selectedRoomId);
+                if (r?.occupancyType === 'family') {
+                  return (
+                    <div className="space-y-2">
+                      <Label>Total Family Members *</Label>
+                      <Input
+                        type="number"
+                        min="1"
+                        placeholder="e.g. 4"
+                        value={studentData.memberCount}
+                        onChange={(e) => setStudentData(prev => ({ ...prev, memberCount: e.target.value }))}
+                      />
+                      <p className="text-xs text-muted-foreground">Include Head, Spouse, Children</p>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+
               <div className="space-y-2">
-                <Label>Phone *</Label>
+                <Label>Phone (Optional for Family)</Label>
                 <Input
                   placeholder="Mobile number"
                   value={studentData.phone}
@@ -652,9 +813,9 @@ const HostelDetail = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Emergency Contact</Label>
+                <Label>Emergency Contact / Spouse Number</Label>
                 <Input
-                  placeholder="Parent/Guardian number (optional)"
+                  placeholder="Optional"
                   value={studentData.emergencyContact}
                   onChange={(e) => setStudentData(prev => ({ ...prev, emergencyContact: e.target.value }))}
                 />
@@ -669,8 +830,8 @@ const HostelDetail = () => {
               </div>
               <div className="space-y-2">
                 <Label>Payment Cycle *</Label>
-                <Select 
-                  value={studentData.paymentCycle} 
+                <Select
+                  value={studentData.paymentCycle}
                   onValueChange={(value) => setStudentData(prev => ({ ...prev, paymentCycle: value }))}
                 >
                   <SelectTrigger>
@@ -706,7 +867,7 @@ const HostelDetail = () => {
                   onChange={(e) => setStudentData(prev => ({ ...prev, monthlyRent: e.target.value }))}
                 />
               </div>
-              <Button onClick={handleAddStudent} className="w-full">Add Student</Button>
+              <Button onClick={handleAddStudent} className="w-full">Add Occupant</Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -763,7 +924,7 @@ const HostelDetail = () => {
       </main>
       {/* Edit Student Dialog */}
       <Dialog open={!!editingStudent} onOpenChange={(open) => !open && setEditingStudent(null)}>
-        <DialogContent>
+        <DialogContent className="max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Student</DialogTitle>
           </DialogHeader>
@@ -810,6 +971,19 @@ const HostelDetail = () => {
                 placeholder="Monthly rent amount"
               />
             </div>
+
+            {/* Show Member Count if it seems to be relevant (e.g. > 1 or just allow editing) */}
+            <div>
+              <Label>Family Member Count</Label>
+              <Input
+                type="number"
+                min="1"
+                value={editStudentData.memberCount}
+                onChange={(e) => setEditStudentData({ ...editStudentData, memberCount: e.target.value })}
+                placeholder="e.g. 4"
+              />
+              <p className="text-xs text-muted-foreground">Update if family size changes.</p>
+            </div>
             <Button onClick={handleEditStudent} className="w-full">Update Student</Button>
           </div>
         </DialogContent>
@@ -849,6 +1023,21 @@ const HostelDetail = () => {
                 placeholder="e.g., 5000"
                 min="0"
               />
+            </div>
+            <div>
+              <Label>Occupancy Type</Label>
+              <Select
+                value={editRoomData.occupancyType}
+                onValueChange={(value) => setEditRoomData({ ...editRoomData, occupancyType: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Who can occupy?" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="students">👨‍🎓 Students</SelectItem>
+                  <SelectItem value="family">👨‍👩‍👧‍👦 Family</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <Button onClick={handleEditRoom} className="w-full">Update Room</Button>
           </div>

@@ -6,10 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Building2, Layers, DoorOpen, Users, IndianRupee, AlertTriangle, Plus, Bell, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import Sidebar from '@/components/Sidebar';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import MainLayout from '@/components/MainLayout';
+import { MobileNav } from '@/components/MobileNav';
 
 const Dashboard = () => {
   const { hostels, payments, recordPayment } = useHostel();
@@ -17,6 +18,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [notificationOpen, setNotificationOpen] = useState(false);
 
+  // ... (rest of logic remains same until return) ...
   const currentMonth = format(new Date(), 'yyyy-MM');
 
   // Recursive function to count all students in a room and its sub-rooms
@@ -83,12 +85,12 @@ const Dashboard = () => {
           }
           return false;
         });
-        
+
         // If no recent payment found or payment is marked as due, include in pending
         return !payment;
       }
     }
-    
+
     // Fallback to monthly check for students without nextPaymentDue
     const payment = payments.find(p => p.studentId === s.id && p.month === currentMonth);
     return !payment || payment.status !== 'paid';
@@ -98,7 +100,7 @@ const Dashboard = () => {
     // Calculate next payment due date after marking as paid
     let newNextPaymentDue: Date;
     const currentDueDate = student.nextPaymentDue ? new Date(student.nextPaymentDue) : new Date();
-    
+
     if (student.paymentCycle === 'custom' && student.customDays) {
       newNextPaymentDue = new Date(currentDueDate);
       newNextPaymentDue.setDate(newNextPaymentDue.getDate() + student.customDays);
@@ -114,26 +116,25 @@ const Dashboard = () => {
       paidDate: new Date().toISOString(),
       status: 'paid'
     });
-    
+
     // Update student's next payment due date
     // Note: You'll need to add an updateStudent function call here
   };
 
   return (
-    <div className="flex min-h-screen bg-[#1a2332]">
-      {/* Sidebar */}
-      <Sidebar />
-
-      {/* Main Content */}
-      <main className="flex-1 overflow-y-auto">
+    <MainLayout>
+      <div className="flex-1 overflow-y-auto">
         {/* Header */}
         <header className="bg-[#0f1f3a] border-b border-gray-700/50 sticky top-0 z-10">
-          <div className="px-8 py-6 flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-white">Dashboard Overview</h1>
-              <p className="text-gray-400 mt-1">Welcome back, {owner?.name}</p>
+          <div className="px-4 md:px-8 py-6 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <MobileNav />
+              <div>
+                <h1 className="text-xl md:text-2xl font-bold text-white">Dashboard Overview</h1>
+                <p className="text-sm md:text-base text-gray-400 mt-1">Welcome back, {owner?.name}</p>
+              </div>
             </div>
-            
+
             {/* Notification Bell */}
             <Popover open={notificationOpen} onOpenChange={setNotificationOpen}>
               <PopoverTrigger asChild>
@@ -159,7 +160,7 @@ const Dashboard = () => {
                       <X className="w-4 h-4" />
                     </Button>
                   </div>
-                  
+
                   <ScrollArea className="max-h-[400px]">
                     {studentsWithPendingPayments.length === 0 ? (
                       <div className="p-8 text-center text-gray-400">
@@ -215,7 +216,7 @@ const Dashboard = () => {
                       </div>
                     )}
                   </ScrollArea>
-                  
+
                   {studentsWithPendingPayments.length > 0 && (
                     <div className="p-3 border-t border-gray-700 bg-gray-800/30">
                       <Button
@@ -315,39 +316,6 @@ const Dashboard = () => {
             </Card>
           </div>
 
-          {/* Revenue Cards */}
-          <div className="grid md:grid-cols-2 gap-4 mb-8">
-            <Card className="bg-green-950/30 border-green-700/50">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-green-400 flex items-center gap-2">
-                  <IndianRupee className="w-4 h-4" />
-                  Collected This Month
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-3xl font-bold text-green-400">₹{collectedRevenue.toLocaleString()}</p>
-                <p className="text-sm text-green-500">{paidThisMonth} students paid</p>
-              </CardContent>
-            </Card>
-
-            <Card className={pendingPayments > 0 ? "bg-orange-950/30 border-orange-700/50" : "bg-green-950/30 border-green-700/50"}>
-              <CardHeader className="pb-2">
-                <CardTitle className={`text-sm font-medium flex items-center gap-2 ${pendingPayments > 0 ? 'text-orange-400' : 'text-green-400'}`}>
-                  <AlertTriangle className="w-4 h-4" />
-                  Pending This Month
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className={`text-3xl font-bold ${pendingPayments > 0 ? 'text-orange-400' : 'text-green-400'}`}>
-                  ₹{(expectedRevenue - collectedRevenue).toLocaleString()}
-                </p>
-                <p className={`text-sm ${pendingPayments > 0 ? 'text-orange-500' : 'text-green-500'}`}>
-                  {pendingPayments} students pending
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
           {/* Quick Actions */}
           <div className="flex flex-wrap gap-4 mb-8">
             <Button onClick={() => navigate('/hostels')} size="lg" className="bg-orange-500 hover:bg-orange-600">
@@ -413,8 +381,8 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         </div>
-      </main>
-    </div>
+      </div>
+    </MainLayout>
   );
 };
 

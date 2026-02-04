@@ -10,6 +10,7 @@ export interface Student {
   paymentCycle?: 'monthly' | 'custom'; // Payment cycle type
   customDays?: number; // Number of days if custom cycle
   nextPaymentDue?: string; // Next payment due date
+  memberCount?: number; // For family occupancy
 }
 
 export interface Payment {
@@ -18,7 +19,9 @@ export interface Payment {
   amount: number;
   month: string; // Format: "YYYY-MM"
   paidDate?: string;
-  status: 'paid' | 'due' | 'overdue';
+  status: 'paid' | 'due' | 'overdue' | 'partial';
+  remainingAmount?: number;
+  nextPaymentDate?: string;
 }
 
 export interface Room {

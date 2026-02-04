@@ -9,6 +9,7 @@ interface HostelContextType {
   updateHostel: (id: string, hostel: Partial<Hostel>) => Promise<void>;
   deleteHostel: (id: string) => Promise<void>;
   addFloor: (hostelId: string, floorNumber: number) => Promise<void>;
+  updateFloor: (hostelId: string, floorId: string, floorNumber: number) => Promise<void>;
   deleteFloor: (hostelId: string, floorId: string) => Promise<void>;
   addRoom: (hostelId: string, floorId: string, room: Omit<Room, 'id' | 'floorId' | 'students'>) => Promise<void>;
   updateRoom: (hostelId: string, floorId: string, roomId: string, room: Partial<Room>) => Promise<void>;
@@ -81,7 +82,8 @@ export function HostelProvider({ children }: { children: ReactNode }) {
               monthlyRent: s.monthly_rent,
               paymentCycle: s.payment_cycle || 'monthly',
               customDays: s.custom_days || undefined,
-              nextPaymentDue: s.next_payment_due || undefined
+              nextPaymentDue: s.next_payment_due || undefined,
+              memberCount: s.member_count || 1
             })),
             subRooms: []
           }));
@@ -126,7 +128,9 @@ export function HostelProvider({ children }: { children: ReactNode }) {
         amount: p.amount,
         month: p.month,
         status: p.status,
-        paidDate: p.paid_date
+        paidDate: p.paid_date,
+        remainingAmount: p.remaining_amount,
+        nextPaymentDate: p.next_payment_date
       }));
 
       setPayments(transformedPayments);
@@ -253,6 +257,16 @@ export function HostelProvider({ children }: { children: ReactNode }) {
     await refreshData();
   };
 
+  const updateFloor = async (hostelId: string, floorId: string, floorNumber: number) => {
+    const { error } = await supabase
+      .from('floors')
+      .update({ floor_number: floorNumber })
+      .eq('id', floorId);
+
+    if (error) throw error;
+    await refreshData();
+  };
+
   const deleteFloor = async (hostelId: string, floorId: string) => {
     const { error } = await supabase
       .from('floors')
@@ -287,11 +301,12 @@ export function HostelProvider({ children }: { children: ReactNode }) {
         const sectionId = sectionData.id;
 
         // Step 2: Create the hall inside this section
+        const hallName = `${room.roomNumber} (${room.wing})`;
         const { error: hallError } = await supabase
           .from('rooms')
           .insert([{
             floor_id: floorId,
-            room_number: room.roomNumber || 'Hall',
+            room_number: hallName,
             capacity: room.capacity || 10,
             monthly_rent: 0, // Halls don't have rent
             room_type: 'hall',
@@ -310,7 +325,7 @@ export function HostelProvider({ children }: { children: ReactNode }) {
           for (let i = 1; i <= numRooms; i++) {
             subRoomsToCreate.push({
               floor_id: floorId,
-              room_number: `Room ${i}`,
+              room_number: `Room ${i} (${room.wing})`,
               capacity: 3, // Default capacity
               monthly_rent: 5000, // Default rent (can be edited later)
               room_type: 'room',
@@ -361,6 +376,7 @@ export function HostelProvider({ children }: { children: ReactNode }) {
     if (room.roomNumber) updateData.room_number = room.roomNumber;
     if (room.capacity !== undefined) updateData.capacity = room.capacity;
     if (room.monthlyRent !== undefined) updateData.monthly_rent = room.monthlyRent;
+    if (room.occupancyType !== undefined) updateData.occupancy_type = room.occupancyType;
 
     const { error } = await supabase
       .from('rooms')
@@ -394,7 +410,8 @@ export function HostelProvider({ children }: { children: ReactNode }) {
         monthly_rent: student.monthlyRent,
         payment_cycle: student.paymentCycle || 'monthly',
         custom_days: student.customDays || null,
-        next_payment_due: student.nextPaymentDue || null
+        next_payment_due: student.nextPaymentDue || null,
+        member_count: student.memberCount || 1
       }]);
 
     if (error) throw error;
@@ -408,6 +425,7 @@ export function HostelProvider({ children }: { children: ReactNode }) {
     if (student.email !== undefined) updateData.email = student.email || null;
     if (student.emergencyContact !== undefined) updateData.emergency_contact = student.emergencyContact || null;
     if (student.monthlyRent !== undefined) updateData.monthly_rent = student.monthlyRent;
+    if (student.memberCount !== undefined) updateData.member_count = student.memberCount;
 
     const { error } = await supabase
       .from('students')
@@ -443,7 +461,9 @@ export function HostelProvider({ children }: { children: ReactNode }) {
       amount: payment.amount,
       month: payment.month,
       status: payment.status,
-      paid_date: payment.paidDate || null
+      paid_date: payment.paidDate || null,
+      remaining_amount: payment.remainingAmount || 0,
+      next_payment_date: payment.nextPaymentDate || null
     };
 
     if (existing) {
@@ -478,6 +498,7 @@ export function HostelProvider({ children }: { children: ReactNode }) {
       updateHostel,
       deleteHostel,
       addFloor,
+      updateFloor,
       deleteFloor,
       addRoom,
       updateRoom,

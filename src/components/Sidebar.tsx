@@ -2,6 +2,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Building2, LayoutDashboard, Layers, Users, CreditCard, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 interface SidebarProps {
     className?: string;
@@ -15,7 +16,8 @@ const Sidebar = ({ className = '' }: SidebarProps) => {
     const menuItems = [
         { name: 'Overview', icon: LayoutDashboard, path: '/dashboard' },
         { name: 'Hostels', icon: Building2, path: '/hostels' },
-        { name: 'Rooms', icon: Layers, path: '/hostels' }, // Can be updated later
+        { name: 'Rooms', icon: Layers, path: '/rooms' },
+        { name: 'Families', icon: Users, path: '/families' },
         { name: 'Students', icon: Users, path: '/students' },
         { name: 'Payments', icon: CreditCard, path: '/payments' },
     ];
@@ -28,7 +30,7 @@ const Sidebar = ({ className = '' }: SidebarProps) => {
     const isActive = (path: string) => location.pathname === path;
 
     return (
-        <div className={`flex flex-col h-screen bg-[#0f1f3a] text-gray-300 w-64 ${className}`}>
+        <div className={cn("flex flex-col h-screen bg-[#0f1f3a] text-gray-300 w-64", className)}>
             {/* Logo */}
             <div className="flex items-center gap-3 p-6 border-b border-gray-700/50">
                 <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center">
@@ -48,8 +50,8 @@ const Sidebar = ({ className = '' }: SidebarProps) => {
                             key={item.name}
                             onClick={() => navigate(item.path)}
                             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${active
-                                    ? 'bg-orange-500/20 text-orange-500 border border-orange-500/30'
-                                    : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/30'
+                                ? 'bg-orange-500/20 text-orange-500 border border-orange-500/30'
+                                : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/30'
                                 }`}
                         >
                             <Icon className="w-5 h-5" />

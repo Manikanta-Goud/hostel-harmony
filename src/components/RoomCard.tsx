@@ -15,6 +15,7 @@ interface RoomCardProps {
     onStudentClick?: (student: any) => void;
     onEditStudent?: (student: any, hostelId: string, floorId: string) => void;
     onEditRoom?: (room: any, hostelId: string, floorId: string) => void;
+    onAddSubRoom?: (sectionId: string) => void;
     toast: any;
     level?: number;
 }
@@ -29,6 +30,7 @@ export function RoomCard({
     onStudentClick,
     onEditStudent,
     onEditRoom,
+    onAddSubRoom,
     toast,
     level = 0
 }: RoomCardProps) {
@@ -53,8 +55,8 @@ export function RoomCard({
         <div className={`${level > 0 ? 'ml-6 border-l-2 border-muted pl-4' : ''}`}>
             <Card className={`bg-muted/${50 - level * 10} ${room.roomType === 'section' ? 'border-orange-500/30' : ''}`}>
                 <CardHeader className="py-3 px-4">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex flex-wrap items-center gap-2">
                             {(hasSubRooms || hasStudents) && (
                                 <button
                                     onClick={() => hasSubRooms ? setIsExpanded(!isExpanded) : setIsStudentsExpanded(!isStudentsExpanded)}
@@ -78,30 +80,47 @@ export function RoomCard({
                                     {room.hasAttachedBathroom && (
                                         <Badge variant="secondary" className="text-xs">🚿 Attached Bath</Badge>
                                     )}
+                                    {room.occupancyType === 'family' && (
+                                        <Badge variant="outline" className="text-xs border-orange-500/50 text-orange-600 bg-orange-500/10">👨‍👩‍👧‍👦 Family Room</Badge>
+                                    )}
                                 </>
                             )}
-
                             {hasSubRooms && (
-                                <Badge variant="secondary">{room.subRooms.length} sub-rooms</Badge>
+                                <Badge variant="secondary">{room.subRooms?.length} sub-rooms</Badge>
                             )}
                             {hasStudents && room.roomType !== 'section' && (
-                                <Badge variant="outline" className="text-xs">{room.students.length} students</Badge>
+                                <Badge variant="outline" className="text-xs">{room.students.length} {room.occupancyType === 'family' ? 'Families' : 'Students'}</Badge>
                             )}
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end sm:justify-start">
                             {room.roomType !== 'section' && room.monthlyRent > 0 && (
                                 <span className="text-sm text-muted-foreground">₹{room.monthlyRent}/month</span>
                             )}
 
-                            {room.roomType !== 'section' && onEditRoom && (
+                            {/* Edit Button - Now available for sections too */}
+                            {onEditRoom && (
                                 <Button
                                     size="sm"
                                     variant="ghost"
                                     onClick={() => onEditRoom(room, hostelId, floorId)}
-                                    title="Edit Room"
+                                    title={room.roomType === 'section' ? "Edit Section" : "Edit Room"}
                                 >
                                     <Pencil className="w-3 h-3" />
+                                </Button>
+                            )}
+
+                            {/* Add Sub-Room Button for Sections */}
+                            {room.roomType === 'section' && onAddSubRoom && (
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="text-primary hover:text-primary hover:bg-primary/10"
+                                    onClick={() => onAddSubRoom(room.id)}
+                                    title="Add Room to this Section"
+                                >
+                                    <Plus className="w-3 h-3 mr-1" />
+                                    <span className="text-xs">Add Room</span>
                                 </Button>
                             )}
 
@@ -151,7 +170,14 @@ export function RoomCard({
                                     <div>
                                         <div className="flex items-center gap-2">
                                             <Users className="w-3 h-3" />
-                                            <span className="font-medium">{student.name}</span>
+                                            <span className="font-medium">
+                                                {student.name}
+                                                {(room.occupancyType === 'family' || (student.memberCount && student.memberCount > 1)) && (
+                                                    <span className="ml-2 text-xs text-orange-600 bg-orange-100 px-1.5 py-0.5 rounded-full">
+                                                        {student.memberCount || 1} Members
+                                                    </span>
+                                                )}
+                                            </span>
                                         </div>
                                         <div className="text-xs text-muted-foreground">{student.phone}</div>
                                     </div>
@@ -209,6 +235,7 @@ export function RoomCard({
                             onStudentClick={onStudentClick}
                             onEditStudent={onEditStudent}
                             onEditRoom={onEditRoom}
+                            onAddSubRoom={onAddSubRoom}
                             toast={toast}
                             level={level + 1}
                         />

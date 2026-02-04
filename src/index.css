@@ -102,4 +102,16 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground;
   }
+
+  h1,
+  h2,
+  h3 {
+    @apply text-balance;
+  }
+
+  @media (max-width: 640px) {
+    h1 {
+      @apply text-lg;
+    }
+  }
 }

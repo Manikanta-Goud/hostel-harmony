@@ -1,0 +1,1 @@
+ALTER TABLE students ADD COLUMN member_count INTEGER DEFAULT 1;
