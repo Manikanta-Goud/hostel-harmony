@@ -8,11 +8,15 @@ import { Button } from '@/components/ui/button';
 import { Search, Building2, Layers, Users, DoorOpen, ArrowLeft, User } from 'lucide-react';
 import MainLayout from '@/components/MainLayout';
 import { MobileNav } from '@/components/MobileNav';
+import { StudentProfileDialog } from '@/components/StudentProfileDialog';
+import { Pencil, Trash2 } from 'lucide-react';
 
 const Rooms = () => {
     const { hostels } = useHostel();
     const [search, setSearch] = useState('');
     const [viewStack, setViewStack] = useState<any[]>([]); // Stack of rooms we have drilled into
+    const [selectedStudent, setSelectedStudent] = useState<any>(null);
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
 
     // 1. Get all top-level items (roots) from all hostels/floors
     const rootItems = useMemo(() => {
@@ -23,6 +27,8 @@ const Rooms = () => {
                     items.push({
                         ...room,
                         hostelName: hostel.name,
+                        hostelId: hostel.id,
+                        floorId: floor.id,
                         floorNumber: floor.floorNumber,
                         // Tag root items
                         isRoot: true
@@ -36,21 +42,23 @@ const Rooms = () => {
     // 2. Flatten EVERYTHING for search purposes (so search works globally)
     const allSearchableItems = useMemo(() => {
         const items: any[] = [];
-        const traverse = (room: any, hostelName: string, floorNumber: number, partName: string | null = null) => {
+        const traverse = (room: any, hostelName: string, hostelId: string, floorId: string, floorNumber: number, partName: string | null = null) => {
             items.push({
                 ...room,
                 hostelName,
+                hostelId,
+                floorId,
                 floorNumber,
                 part: partName
             });
             if (room.subRooms) {
-                room.subRooms.forEach((sub: any) => traverse(sub, hostelName, floorNumber, room.roomNumber));
+                room.subRooms.forEach((sub: any) => traverse(sub, hostelName, hostelId, floorId, floorNumber, room.roomNumber));
             }
         };
 
         hostels.forEach(h => {
             h.floors.forEach(f => {
-                f.rooms.forEach(r => traverse(r, h.name, f.floorNumber));
+                f.rooms.forEach(r => traverse(r, h.name, h.id, f.id, f.floorNumber));
             });
         });
         return items;
@@ -81,6 +89,8 @@ const Rooms = () => {
                 return currentParent.subRooms.map((sub: any) => ({
                     ...sub,
                     hostelName: currentParent.hostelName,
+                    hostelId: currentParent.hostelId,
+                    floorId: currentParent.floorId,
                     floorNumber: currentParent.floorNumber,
                     part: currentParent.roomNumber
                 }));
@@ -114,24 +124,44 @@ const Rooms = () => {
 
     return (
         <MainLayout>
-            <header className="bg-[#0f1f3a] border-b border-gray-700/50 sticky top-0 z-10">
-                <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+            {/* Header - Desktop */}
+            <header className="bg-[#0f1f3a] border-b border-gray-700/50 p-6 sticky top-0 z-20 hidden md:block">
+                <div className="flex justify-between items-center max-w-7xl mx-auto w-full">
                     <div className="flex items-center gap-4">
-                        <MobileNav />
                         {viewStack.length > 0 && (
-                            <Button variant="ghost" size="icon" onClick={handleBack} className="text-gray-400 hover:text-white">
+                            <Button variant="ghost" size="icon" onClick={handleBack} className="text-gray-400 hover:text-white hover:bg-white/5">
                                 <ArrowLeft className="w-5 h-5" />
                             </Button>
                         )}
-                        <div className="flex items-center gap-3">
-                            <Layers className="w-6 h-6 text-primary" />
-                            <h1 className="text-xl font-bold text-white">
-                                {viewStack.length === 0 ? "All Rooms" : currentContextItem.roomNumber}
+                        <div>
+                            <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">
+                                {viewStack.length === 0 ? "Property Structure" : currentContextItem.roomNumber}
                             </h1>
+                            <p className="text-gray-400 text-sm mt-1">Navigate through your buildings and room hierarchies</p>
                         </div>
                     </div>
                 </div>
             </header>
+
+            {/* Mobile Header */}
+            <div className="md:hidden p-4 bg-gradient-to-b from-[#0f1f3a] to-transparent">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <MobileNav />
+                        {viewStack.length > 0 && (
+                            <Button variant="ghost" size="icon" onClick={handleBack} className="text-gray-400 h-8 w-8">
+                                <ArrowLeft className="w-5 h-5" />
+                            </Button>
+                        )}
+                        <div>
+                            <h1 className="text-2xl font-bold text-white tracking-tight">
+                                {viewStack.length === 0 ? "Structure" : currentContextItem.roomNumber}
+                            </h1>
+                            <p className="text-[10px] text-blue-400 font-bold uppercase tracking-widest mt-0.5">Asset Explorer</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             <div className="overflow-y-auto flex-1">
                 <main className="container mx-auto px-4 py-8">
@@ -166,11 +196,27 @@ const Rooms = () => {
                                 {currentContextItem.students && currentContextItem.students.length > 0 ? (
                                     <div className="grid gap-2">
                                         {currentContextItem.students.map((student: any, idx: number) => (
-                                            <div key={idx} className="p-3 bg-gray-800/50 rounded-lg flex items-center gap-3 border border-gray-700">
-                                                <div className="w-8 h-8 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center">
-                                                    <User className="w-4 h-4" />
+                                            <div key={idx}
+                                                className="p-3 bg-gray-800/50 rounded-lg flex items-center justify-between border border-gray-700 hover:bg-gray-800 transition-colors cursor-pointer group"
+                                                onClick={() => {
+                                                    setSelectedStudent(student);
+                                                    setIsProfileOpen(true);
+                                                }}
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center">
+                                                        <User className="w-4 h-4" />
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-white font-medium block">{student.name}</span>
+                                                        <span className="text-xs text-gray-500">{student.occupation || 'Occupant'}</span>
+                                                    </div>
                                                 </div>
-                                                <span className="text-white font-medium">{student.name}</span>
+                                                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-gray-400 hover:text-white">
+                                                        <Pencil className="w-3 h-3" />
+                                                    </Button>
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
@@ -249,6 +295,16 @@ const Rooms = () => {
                     )}
                 </main>
             </div>
+
+            {selectedStudent && currentContextItem && (
+                <StudentProfileDialog
+                    student={selectedStudent}
+                    isOpen={isProfileOpen}
+                    onClose={() => setIsProfileOpen(false)}
+                    hostelId={currentContextItem.hostelId}
+                    floorId={currentContextItem.floorId}
+                />
+            )}
         </MainLayout>
     );
 };

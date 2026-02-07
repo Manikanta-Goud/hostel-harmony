@@ -11,6 +11,13 @@ export interface Student {
   customDays?: number; // Number of days if custom cycle
   nextPaymentDue?: string; // Next payment due date
   memberCount?: number; // For family occupancy
+  aadharNumber?: string;
+  permanentAddress?: string;
+  occupation?: string;
+  workAddress?: string;
+  fatherName?: string;
+  motherName?: string;
+  parentPhone?: string;
 }
 
 export interface Payment {
@@ -60,4 +67,64 @@ export interface Owner {
   name: string;
   email: string;
   phone: string;
+}
+
+export interface Expense {
+  id: string;
+  hostelId: string;
+  category: 'utilities' | 'staff' | 'supplies' | 'other';
+  description: string;
+  amount: number;
+  date: string;
+  notes?: string;
+}
+
+export interface Staff {
+  id: string;
+  hostelId: string;
+  name: string;
+  phone: string;
+  email?: string;
+  area?: string;
+  role?: string;
+  monthlySalary: number;
+  joinDate: string;
+}
+
+export interface StaffSalary {
+  id: string;
+  staffId: string;
+  amount: number;
+  month: string; // Format: "YYYY-MM"
+  status: 'paid' | 'due' | 'pending';
+  paidDate?: string;
+}
+
+export interface Utility {
+  id: string;
+  hostelId: string;
+  itemName: string;
+  price: number;
+  date: string;
+  description?: string;
+}
+
+export interface Supplier {
+  id: string;
+  hostelId: string;
+  name: string;
+  supplies: string;
+  amount: number;
+  phone?: string;
+}
+
+export interface Requirement {
+  id: string;
+  hostelId: string;
+  itemName: string;
+  quantity: number;
+  amount: number;
+  date: string;
+  vendor?: string;
+  notes?: string;
 }

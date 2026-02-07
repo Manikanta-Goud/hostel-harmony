@@ -123,122 +123,133 @@ const Dashboard = () => {
 
   return (
     <MainLayout>
-      <div className="flex-1 overflow-y-auto">
-        {/* Header */}
-        <header className="bg-[#0f1f3a] border-b border-gray-700/50 sticky top-0 z-10">
-          <div className="px-4 md:px-8 py-6 flex items-center justify-between">
+      <div className="flex-1">
+        {/* Header - Desktop */}
+        <header className="bg-[#0f1f3a] border-b border-gray-700/50 sticky top-0 z-10 hidden md:block">
+          <div className="px-8 py-6 flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-white tracking-tight">Dashboard Overview</h1>
+              <p className="text-sm text-gray-400 mt-1">Welcome back, {owner?.name}</p>
+            </div>
+
             <div className="flex items-center gap-4">
+              {/* Notification Bell (Desktop) */}
+              <Popover open={notificationOpen} onOpenChange={setNotificationOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="icon" className="relative text-gray-300 hover:text-white hover:bg-white/5">
+                    <Bell className="w-5 h-5" />
+                    {studentsWithPendingPayments.length > 0 && (
+                      <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-red-500 text-white text-xs ring-2 ring-[#0f1f3a]">
+                        {studentsWithPendingPayments.length}
+                      </Badge>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-96 p-0 border-gray-700 bg-[#0f1f3a]" align="end">
+                  <div className="bg-[#0f1f3a] border border-gray-700 rounded-lg overflow-hidden shadow-2xl">
+                    <div className="p-4 border-b border-gray-700 flex items-center justify-between">
+                      <div>
+                        <h3 className="font-semibold text-white">Payment Reminders</h3>
+                        <p className="text-xs text-gray-400 mt-1">
+                          {studentsWithPendingPayments.length} student{studentsWithPendingPayments.length !== 1 ? 's' : ''} with pending payments
+                        </p>
+                      </div>
+                      <Button variant="ghost" size="icon" onClick={() => setNotificationOpen(false)} className="text-gray-400 hover:text-white">
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+
+                    <ScrollArea className="max-h-[400px]">
+                      {studentsWithPendingPayments.length === 0 ? (
+                        <div className="p-8 text-center text-gray-400">
+                          <Bell className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                          <p>All payments are up to date!</p>
+                        </div>
+                      ) : (
+                        <div className="divide-y divide-gray-700">
+                          {studentsWithPendingPayments.map((student) => (
+                            <div key={student.id} className="p-4 hover:bg-gray-800/30 transition-colors">
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <h4 className="font-medium text-white">{student.name}</h4>
+                                  </div>
+                                  <div className="mt-1 text-xs text-gray-400">
+                                    <span>{student.hostelName} • Room {student.roomNumber}</span>
+                                    <div className="mt-1 font-semibold text-orange-400">₹{student.monthlyRent} due</div>
+                                  </div>
+                                </div>
+                                <Button size="sm" onClick={() => handleMarkAsPaid(student)} className="bg-green-600 hover:bg-green-700 h-8 px-3 text-xs">
+                                  Paid
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </ScrollArea>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+        </header>
+
+        {/* Mobile Header Info */}
+        <div className="md:hidden p-4 bg-gradient-to-b from-[#0f1f3a] to-transparent">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
               <MobileNav />
               <div>
-                <h1 className="text-xl md:text-2xl font-bold text-white">Dashboard Overview</h1>
-                <p className="text-sm md:text-base text-gray-400 mt-1">Welcome back, {owner?.name}</p>
+                <h2 className="text-xl font-bold text-white tracking-tight">Hello, {owner?.name?.split(' ')[0]}</h2>
+                <p className="text-[10px] text-blue-400 font-bold uppercase tracking-widest mt-0.5">Control Center</p>
               </div>
             </div>
 
-            {/* Notification Bell */}
             <Popover open={notificationOpen} onOpenChange={setNotificationOpen}>
               <PopoverTrigger asChild>
-                <Button variant="ghost" size="icon" className="relative text-gray-300 hover:text-white">
-                  <Bell className="w-5 h-5" />
+                <Button variant="ghost" size="icon" className="relative text-gray-300 hover:bg-white/5">
+                  <Bell className="w-6 h-6" />
                   {studentsWithPendingPayments.length > 0 && (
-                    <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-red-500 text-white text-xs">
+                    <Badge className="absolute -top-0 -right-0 h-4 w-4 flex items-center justify-center p-0 bg-red-500 text-white text-[10px] ring-2 ring-[#0a0f1a]">
                       {studentsWithPendingPayments.length}
                     </Badge>
                   )}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-96 p-0" align="end">
-                <div className="bg-[#0f1f3a] border border-gray-700">
+              <PopoverContent className="w-[calc(100vw-32px)] ml-4 p-0 border-gray-700 bg-[#0f1f3a]" align="center">
+                <div className="bg-[#0f1f3a] border border-gray-700 rounded-lg overflow-hidden">
                   <div className="p-4 border-b border-gray-700 flex items-center justify-between">
-                    <div>
-                      <h3 className="font-semibold text-white">Payment Reminders</h3>
-                      <p className="text-xs text-gray-400 mt-1">
-                        {studentsWithPendingPayments.length} student{studentsWithPendingPayments.length !== 1 ? 's' : ''} with pending payments
-                      </p>
-                    </div>
-                    <Button variant="ghost" size="icon" onClick={() => setNotificationOpen(false)} className="text-gray-400 hover:text-white">
+                    <h3 className="font-semibold text-white">Reminders</h3>
+                    <Button variant="ghost" size="icon" onClick={() => setNotificationOpen(false)} className="text-gray-400">
                       <X className="w-4 h-4" />
                     </Button>
                   </div>
-
-                  <ScrollArea className="max-h-[400px]">
-                    {studentsWithPendingPayments.length === 0 ? (
-                      <div className="p-8 text-center text-gray-400">
-                        <Bell className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                        <p>All payments are up to date!</p>
-                        <p className="text-xs mt-1">No pending payments for this month.</p>
-                      </div>
-                    ) : (
-                      <div className="divide-y divide-gray-700">
-                        {studentsWithPendingPayments.map((student) => (
-                          <div key={student.id} className="p-4 hover:bg-gray-800/30 transition-colors">
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                                  <Users className="w-4 h-4 text-orange-400" />
-                                  <h4 className="font-medium text-white">{student.name}</h4>
-                                </div>
-                                <div className="mt-2 space-y-1 text-xs text-gray-400">
-                                  <div className="flex items-center gap-2">
-                                    <Building2 className="w-3 h-3" />
-                                    <span>{student.hostelName}</span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <DoorOpen className="w-3 h-3" />
-                                    <span>Room {student.roomNumber}</span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <IndianRupee className="w-3 h-3" />
-                                    <span className="font-semibold text-orange-400">₹{student.monthlyRent}</span>
-                                    {student.nextPaymentDue ? (
-                                      <span>due on {format(new Date(student.nextPaymentDue), 'dd MMM yyyy')}</span>
-                                    ) : (
-                                      <span>due for {format(new Date(), 'MMMM yyyy')}</span>
-                                    )}
-                                  </div>
-                                  {student.paymentCycle === 'custom' && student.customDays && (
-                                    <div className="flex items-center gap-2 text-blue-400">
-                                      <span className="text-xs">⏱️ Custom: {student.customDays} days cycle</span>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                              <Button
-                                size="sm"
-                                onClick={() => handleMarkAsPaid(student)}
-                                className="bg-green-600 hover:bg-green-700 text-white"
-                              >
-                                Mark Paid
-                              </Button>
+                  <ScrollArea className="max-h-[60vh]">
+                    {/* Same list logic as desktop but compact for mobile */}
+                    <div className="divide-y divide-gray-700">
+                      {studentsWithPendingPayments.map((student) => (
+                        <div key={student.id} className="p-4">
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex-1">
+                              <h4 className="font-medium text-sm text-white">{student.name}</h4>
+                              <p className="text-[10px] text-gray-400">Room {student.roomNumber} • ₹{student.monthlyRent}</p>
                             </div>
+                            <Button size="sm" onClick={() => handleMarkAsPaid(student)} className="bg-green-600 h-8 px-4 text-xs font-bold">
+                              MARK PAID
+                            </Button>
                           </div>
-                        ))}
-                      </div>
-                    )}
-                  </ScrollArea>
-
-                  {studentsWithPendingPayments.length > 0 && (
-                    <div className="p-3 border-t border-gray-700 bg-gray-800/30">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          navigate('/payments');
-                          setNotificationOpen(false);
-                        }}
-                        className="w-full text-orange-400 hover:text-orange-300"
-                      >
-                        View All Payments →
-                      </Button>
+                        </div>
+                      ))}
                     </div>
-                  )}
+                  </ScrollArea>
                 </div>
               </PopoverContent>
             </Popover>
           </div>
-        </header>
+        </div>
 
-        <div className="px-8 py-8">
+        <div className="px-4 md:px-8 py-4 md:py-8 space-y-6 md:space-y-8">
           {/* Payment Alert Banner */}
           {studentsWithPendingPayments.length > 0 && (
             <Card className="mb-6 bg-orange-950/30 border-orange-700/50">
@@ -381,8 +392,8 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         </div>
-      </div>
-    </MainLayout>
+      </div >
+    </MainLayout >
   );
 };
 

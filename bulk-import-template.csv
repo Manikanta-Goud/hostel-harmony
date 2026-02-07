@@ -1,0 +1,4 @@
+hostel_name,floor_number,part_name,room_number,student_name,phone,email,aadhar_number,monthly_rent,occupation,permanent_address,work_address,father_name,mother_name,parent_phone,member_count,join_date
+Sunshine Hostel,1,Part A,101,Rahul Kumar,9876543210,rahul@email.com,123456789012,5000,Student,123 Main St Delhi,XYZ College,Mr Kumar,Mrs Kumar,9876543211,1,2024-01-15
+Sunshine Hostel,1,Part A,102,Priya Sharma,9876543220,priya@email.com,123456789013,5500,Employee,456 Park Ave Mumbai,ABC Company,Mr Sharma,Mrs Sharma,9876543221,1,2024-01-20
+Sunshine Hostel,1,Part B,103,Singh Family,9876543230,,123456789014,8000,Business,789 Lake Rd Pune,Singh Enterprises,,,9876543231,4,2024-02-01

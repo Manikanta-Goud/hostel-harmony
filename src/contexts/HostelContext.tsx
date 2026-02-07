@@ -1,10 +1,16 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Hostel, Floor, Room, Student, Payment } from '@/types/hostel';
+import { Hostel, Floor, Room, Student, Payment, Expense, Requirement, Staff, StaffSalary, Utility, Supplier } from '@/types/hostel';
 import { supabase } from '@/lib/supabase';
 
 interface HostelContextType {
   hostels: Hostel[];
   payments: Payment[];
+  expenses: Expense[];
+  requirements: Requirement[];
+  staff: Staff[];
+  staffSalaries: StaffSalary[];
+  utilities: Utility[];
+  suppliers: Supplier[];
   addHostel: (hostel: Omit<Hostel, 'id' | 'floors'>) => Promise<void>;
   updateHostel: (id: string, hostel: Partial<Hostel>) => Promise<void>;
   deleteHostel: (id: string) => Promise<void>;
@@ -19,6 +25,22 @@ interface HostelContextType {
   deleteStudent: (hostelId: string, floorId: string, roomId: string, studentId: string) => Promise<void>;
   recordPayment: (payment: Omit<Payment, 'id'>) => Promise<void>;
   getStudentPayments: (studentId: string) => Payment[];
+  addExpense: (expense: Omit<Expense, 'id'>) => Promise<void>;
+  updateExpense: (id: string, expense: Partial<Expense>) => Promise<void>;
+  deleteExpense: (id: string) => Promise<void>;
+  addRequirement: (requirement: Omit<Requirement, 'id'>) => Promise<void>;
+  updateRequirement: (id: string, requirement: Partial<Requirement>) => Promise<void>;
+  deleteRequirement: (id: string) => Promise<void>;
+  addStaff: (staff: Omit<Staff, 'id'>) => Promise<void>;
+  updateStaff: (id: string, staff: Partial<Staff>) => Promise<void>;
+  deleteStaff: (id: string) => Promise<void>;
+  payStaffSalary: (salary: Omit<StaffSalary, 'id'>) => Promise<void>;
+  addUtility: (utility: Omit<Utility, 'id'>) => Promise<void>;
+  updateUtility: (id: string, utility: Partial<Utility>) => Promise<void>;
+  deleteUtility: (id: string) => Promise<void>;
+  addSupplier: (supplier: Omit<Supplier, 'id'>) => Promise<void>;
+  updateSupplier: (id: string, supplier: Partial<Supplier>) => Promise<void>;
+  deleteSupplier: (id: string) => Promise<void>;
   isLoading: boolean;
   refreshData: () => Promise<void>;
 }
@@ -28,6 +50,12 @@ const HostelContext = createContext<HostelContextType | undefined>(undefined);
 export function HostelProvider({ children }: { children: ReactNode }) {
   const [hostels, setHostels] = useState<Hostel[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [requirements, setRequirements] = useState<Requirement[]>([]);
+  const [staff, setStaff] = useState<Staff[]>([]);
+  const [staffSalaries, setStaffSalaries] = useState<StaffSalary[]>([]);
+  const [utilities, setUtilities] = useState<Utility[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Load all data from Supabase
@@ -83,7 +111,14 @@ export function HostelProvider({ children }: { children: ReactNode }) {
               paymentCycle: s.payment_cycle || 'monthly',
               customDays: s.custom_days || undefined,
               nextPaymentDue: s.next_payment_due || undefined,
-              memberCount: s.member_count || 1
+              memberCount: s.member_count || 1,
+              aadharNumber: s.aadhar_number,
+              permanentAddress: s.permanent_address,
+              occupation: s.occupation,
+              workAddress: s.work_address,
+              fatherName: s.father_name,
+              motherName: s.mother_name,
+              parentPhone: s.parent_phone
             })),
             subRooms: []
           }));
@@ -94,7 +129,7 @@ export function HostelProvider({ children }: { children: ReactNode }) {
 
           allRooms.forEach(room => {
             if (room.parentRoomId) {
-              const parent = roomMap.get(room.parentRoomId);
+              const parent: any = roomMap.get(room.parentRoomId);
               if (parent) {
                 parent.subRooms.push(room);
               }
@@ -134,6 +169,138 @@ export function HostelProvider({ children }: { children: ReactNode }) {
       }));
 
       setPayments(transformedPayments);
+
+      // Fetch expenses
+      const { data: expensesData, error: expensesError } = await supabase
+        .from('expenses')
+        .select('*')
+        .order('date', { ascending: false });
+
+      if (expensesError) {
+        console.error('Error fetching expenses:', expensesError);
+      }
+
+      const transformedExpenses: Expense[] = (expensesData || []).map((e: any) => ({
+        id: e.id,
+        hostelId: e.hostel_id,
+        category: e.category,
+        description: e.description,
+        amount: e.amount,
+        date: e.date,
+        notes: e.notes
+      }));
+
+      setExpenses(transformedExpenses);
+
+      // Fetch requirements (kept for backward compatibility)
+      const { data: requirementsData, error: requirementsError } = await supabase
+        .from('requirements')
+        .select('*')
+        .order('date', { ascending: false });
+
+      if (requirementsError) {
+        console.error('Error fetching requirements:', requirementsError);
+      }
+
+      const transformedRequirements: Requirement[] = (requirementsData || []).map((r: any) => ({
+        id: r.id,
+        hostelId: r.hostel_id,
+        itemName: r.item_name,
+        quantity: r.quantity,
+        amount: r.amount,
+        date: r.date,
+        vendor: r.vendor,
+        notes: r.notes
+      }));
+
+      setRequirements(transformedRequirements);
+
+      // Fetch staff
+      const { data: staffData, error: staffError } = await supabase
+        .from('staff')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+      if (staffError && staffError.code !== 'PGRST116') {
+        console.error('Error fetching staff:', staffError);
+      }
+
+      const transformedStaff: Staff[] = (staffData || []).map((s: any) => ({
+        id: s.id,
+        hostelId: s.hostel_id,
+        name: s.name,
+        phone: s.phone,
+        email: s.email,
+        area: s.area,
+        role: s.role,
+        monthlySalary: s.monthly_salary,
+        joinDate: s.join_date
+      }));
+
+      setStaff(transformedStaff);
+
+      // Fetch staff salaries
+      const { data: staffSalariesData, error: staffSalariesError } = await supabase
+        .from('staff_salaries')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (staffSalariesError && staffSalariesError.code !== 'PGRST116') {
+        console.error('Error fetching staff salaries:', staffSalariesError);
+      }
+
+      const transformedStaffSalaries: StaffSalary[] = (staffSalariesData || []).map((s: any) => ({
+        id: s.id,
+        staffId: s.staff_id,
+        amount: s.amount,
+        month: s.month,
+        status: s.status,
+        paidDate: s.paid_date
+      }));
+
+      setStaffSalaries(transformedStaffSalaries);
+
+      // Fetch utilities
+      const { data: utilitiesData, error: utilitiesError } = await supabase
+        .from('utilities')
+        .select('*')
+        .order('date', { ascending: false });
+
+      if (utilitiesError && utilitiesError.code !== 'PGRST116') {
+        console.error('Error fetching utilities:', utilitiesError);
+      }
+
+      const transformedUtilities: Utility[] = (utilitiesData || []).map((u: any) => ({
+        id: u.id,
+        hostelId: u.hostel_id,
+        itemName: u.item_name,
+        price: u.price,
+        date: u.date,
+        description: u.description
+      }));
+
+      setUtilities(transformedUtilities);
+
+      // Fetch suppliers
+      const { data: suppliersData, error: suppliersError } = await supabase
+        .from('suppliers')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+      if (suppliersError && suppliersError.code !== 'PGRST116') {
+        console.error('Error fetching suppliers:', suppliersError);
+      }
+
+      const transformedSuppliers: Supplier[] = (suppliersData || []).map((s: any) => ({
+        id: s.id,
+        hostelId: s.hostel_id,
+        name: s.name,
+        supplies: s.supplies,
+        amount: s.amount,
+        phone: s.phone
+      }));
+
+      setSuppliers(transformedSuppliers);
     } catch (error) {
       console.error('Error loading data from Supabase:', error);
     } finally {
@@ -180,6 +347,34 @@ export function HostelProvider({ children }: { children: ReactNode }) {
       })
       .subscribe();
 
+    const staffSubscription = supabase
+      .channel('staff-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'staff' }, () => {
+        loadData();
+      })
+      .subscribe();
+
+    const staffSalariesSubscription = supabase
+      .channel('staff_salaries-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'staff_salaries' }, () => {
+        loadData();
+      })
+      .subscribe();
+
+    const utilitiesSubscription = supabase
+      .channel('utilities-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'utilities' }, () => {
+        loadData();
+      })
+      .subscribe();
+
+    const suppliersSubscription = supabase
+      .channel('suppliers-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'suppliers' }, () => {
+        loadData();
+      })
+      .subscribe();
+
     // Cleanup subscriptions on unmount
     return () => {
       supabase.removeChannel(hostelSubscription);
@@ -187,6 +382,10 @@ export function HostelProvider({ children }: { children: ReactNode }) {
       supabase.removeChannel(roomSubscription);
       supabase.removeChannel(studentSubscription);
       supabase.removeChannel(paymentSubscription);
+      supabase.removeChannel(staffSubscription);
+      supabase.removeChannel(staffSalariesSubscription);
+      supabase.removeChannel(utilitiesSubscription);
+      supabase.removeChannel(suppliersSubscription);
     };
   }, []);
 
@@ -199,7 +398,7 @@ export function HostelProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabase
         .from('hostels')
         .insert([{
-          owner_id: hostel.ownerId || 'default-owner', // Use ownerId if provided, otherwise default
+          owner_id: hostel.ownerId || 'default-owner',
           name: hostel.name,
           address: hostel.address,
           total_capacity: hostel.totalCapacity || 0
@@ -287,7 +486,7 @@ export function HostelProvider({ children }: { children: ReactNode }) {
           .insert([{
             floor_id: floorId,
             room_number: room.wing || 'Section',
-            capacity: 0, // Section itself doesn't hold students
+            capacity: 0,
             monthly_rent: 0,
             room_type: 'section',
             occupancy_type: room.occupancyType || 'students',
@@ -308,7 +507,7 @@ export function HostelProvider({ children }: { children: ReactNode }) {
             floor_id: floorId,
             room_number: hallName,
             capacity: room.capacity || 10,
-            monthly_rent: 0, // Halls don't have rent
+            monthly_rent: 0,
             room_type: 'hall',
             occupancy_type: room.occupancyType || 'students',
             wing: room.wing || null,
@@ -319,15 +518,15 @@ export function HostelProvider({ children }: { children: ReactNode }) {
         if (hallError) throw hallError;
 
         // Step 3: Create placeholder sub-rooms
-        const numRooms = room.monthlyRent || 0; // We stored number of rooms in monthlyRent field temporarily
+        const numRooms = room.monthlyRent || 0;
         if (numRooms > 0) {
           const subRoomsToCreate = [];
           for (let i = 1; i <= numRooms; i++) {
             subRoomsToCreate.push({
               floor_id: floorId,
               room_number: `Room ${i} (${room.wing})`,
-              capacity: 3, // Default capacity
-              monthly_rent: 5000, // Default rent (can be edited later)
+              capacity: 3,
+              monthly_rent: 5000,
               room_type: 'room',
               occupancy_type: room.occupancyType || 'students',
               wing: room.wing || null,
@@ -364,9 +563,6 @@ export function HostelProvider({ children }: { children: ReactNode }) {
       await refreshData();
     } catch (error: any) {
       console.error('Error adding room:', error);
-      console.error('Error message:', error?.message);
-      console.error('Error details:', error?.details);
-      console.error('Error hint:', error?.hint);
       throw error;
     }
   };
@@ -411,7 +607,14 @@ export function HostelProvider({ children }: { children: ReactNode }) {
         payment_cycle: student.paymentCycle || 'monthly',
         custom_days: student.customDays || null,
         next_payment_due: student.nextPaymentDue || null,
-        member_count: student.memberCount || 1
+        member_count: student.memberCount || 1,
+        aadhar_number: student.aadharNumber || null,
+        permanent_address: student.permanentAddress || null,
+        occupation: student.occupation || null,
+        work_address: student.workAddress || null,
+        father_name: student.fatherName || null,
+        mother_name: student.motherName || null,
+        parent_phone: student.parentPhone || null
       }]);
 
     if (error) throw error;
@@ -426,6 +629,14 @@ export function HostelProvider({ children }: { children: ReactNode }) {
     if (student.emergencyContact !== undefined) updateData.emergency_contact = student.emergencyContact || null;
     if (student.monthlyRent !== undefined) updateData.monthly_rent = student.monthlyRent;
     if (student.memberCount !== undefined) updateData.member_count = student.memberCount;
+    if (student.joinDate !== undefined) updateData.join_date = student.joinDate;
+    if (student.aadharNumber !== undefined) updateData.aadhar_number = student.aadharNumber;
+    if (student.permanentAddress !== undefined) updateData.permanent_address = student.permanentAddress;
+    if (student.occupation !== undefined) updateData.occupation = student.occupation;
+    if (student.workAddress !== undefined) updateData.work_address = student.workAddress;
+    if (student.fatherName !== undefined) updateData.father_name = student.fatherName;
+    if (student.motherName !== undefined) updateData.mother_name = student.motherName;
+    if (student.parentPhone !== undefined) updateData.parent_phone = student.parentPhone;
 
     const { error } = await supabase
       .from('students')
@@ -467,7 +678,6 @@ export function HostelProvider({ children }: { children: ReactNode }) {
     };
 
     if (existing) {
-      // Update existing payment
       const { error } = await supabase
         .from('payments')
         .update(paymentData)
@@ -475,7 +685,6 @@ export function HostelProvider({ children }: { children: ReactNode }) {
 
       if (error) throw error;
     } else {
-      // Insert new payment
       const { error } = await supabase
         .from('payments')
         .insert([paymentData]);
@@ -490,10 +699,274 @@ export function HostelProvider({ children }: { children: ReactNode }) {
     return payments.filter(p => p.studentId === studentId);
   };
 
+  // Expense CRUD operations
+  const addExpense = async (expense: Omit<Expense, 'id'>) => {
+    const { error } = await supabase
+      .from('expenses')
+      .insert([{
+        hostel_id: expense.hostelId,
+        category: expense.category,
+        description: expense.description,
+        amount: expense.amount,
+        date: expense.date,
+        notes: expense.notes || null
+      }]);
+
+    if (error) throw error;
+    await refreshData();
+  };
+
+  const updateExpense = async (id: string, expense: Partial<Expense>) => {
+    const updateData: any = {};
+    if (expense.category) updateData.category = expense.category;
+    if (expense.description) updateData.description = expense.description;
+    if (expense.amount !== undefined) updateData.amount = expense.amount;
+    if (expense.date) updateData.date = expense.date;
+    if (expense.notes !== undefined) updateData.notes = expense.notes || null;
+
+    const { error } = await supabase
+      .from('expenses')
+      .update(updateData)
+      .eq('id', id);
+
+    if (error) throw error;
+    await refreshData();
+  };
+
+  const deleteExpense = async (id: string) => {
+    const { error } = await supabase
+      .from('expenses')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+    await refreshData();
+  };
+
+  // Requirement CRUD operations (kept for backward compatibility)
+  const addRequirement = async (requirement: Omit<Requirement, 'id'>) => {
+    const { error } = await supabase
+      .from('requirements')
+      .insert([{
+        hostel_id: requirement.hostelId,
+        item_name: requirement.itemName,
+        quantity: requirement.quantity,
+        amount: requirement.amount,
+        date: requirement.date,
+        vendor: requirement.vendor || null,
+        notes: requirement.notes || null
+      }]);
+
+    if (error) throw error;
+    await refreshData();
+  };
+
+  const updateRequirement = async (id: string, requirement: Partial<Requirement>) => {
+    const updateData: any = {};
+    if (requirement.itemName) updateData.item_name = requirement.itemName;
+    if (requirement.quantity !== undefined) updateData.quantity = requirement.quantity;
+    if (requirement.amount !== undefined) updateData.amount = requirement.amount;
+    if (requirement.date) updateData.date = requirement.date;
+    if (requirement.vendor !== undefined) updateData.vendor = requirement.vendor || null;
+    if (requirement.notes !== undefined) updateData.notes = requirement.notes || null;
+
+    const { error } = await supabase
+      .from('requirements')
+      .update(updateData)
+      .eq('id', id);
+
+    if (error) throw error;
+    await refreshData();
+  };
+
+  const deleteRequirement = async (id: string) => {
+    const { error } = await supabase
+      .from('requirements')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+    await refreshData();
+  };
+
+  // Staff CRUD operations
+  const addStaff = async (staff: Omit<Staff, 'id'>) => {
+    const { error } = await supabase
+      .from('staff')
+      .insert([{
+        hostel_id: staff.hostelId,
+        name: staff.name,
+        phone: staff.phone,
+        email: staff.email || null,
+        area: staff.area || null,
+        role: staff.role || null,
+        monthly_salary: staff.monthlySalary,
+        join_date: staff.joinDate || new Date().toISOString()
+      }]);
+
+    if (error) throw error;
+    await refreshData();
+  };
+
+  const updateStaff = async (id: string, staff: Partial<Staff>) => {
+    const updateData: any = {};
+    if (staff.name) updateData.name = staff.name;
+    if (staff.phone) updateData.phone = staff.phone;
+    if (staff.email !== undefined) updateData.email = staff.email || null;
+    if (staff.area !== undefined) updateData.area = staff.area || null;
+    if (staff.role !== undefined) updateData.role = staff.role || null;
+    if (staff.monthlySalary !== undefined) updateData.monthly_salary = staff.monthlySalary;
+
+    const { error } = await supabase
+      .from('staff')
+      .update(updateData)
+      .eq('id', id);
+
+    if (error) throw error;
+    await refreshData();
+  };
+
+  const deleteStaff = async (id: string) => {
+    const { error } = await supabase
+      .from('staff')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+    await refreshData();
+  };
+
+  // Staff Salary operations
+  const payStaffSalary = async (salary: Omit<StaffSalary, 'id'>) => {
+    const { data: existing, error: fetchError } = await supabase
+      .from('staff_salaries')
+      .select('id')
+      .eq('staff_id', salary.staffId)
+      .eq('month', salary.month)
+      .maybeSingle();
+
+    if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
+
+    const salaryData = {
+      staff_id: salary.staffId,
+      amount: salary.amount,
+      month: salary.month,
+      status: salary.status,
+      paid_date: salary.paidDate || null
+    };
+
+    if (existing) {
+      const { error } = await supabase
+        .from('staff_salaries')
+        .update(salaryData)
+        .eq('id', existing.id);
+
+      if (error) throw error;
+    } else {
+      const { error } = await supabase
+        .from('staff_salaries')
+        .insert([salaryData]);
+
+      if (error) throw error;
+    }
+
+    await refreshData();
+  };
+
+  // Utility CRUD operations
+  const addUtility = async (utility: Omit<Utility, 'id'>) => {
+    const { error } = await supabase
+      .from('utilities')
+      .insert([{
+        hostel_id: utility.hostelId,
+        item_name: utility.itemName,
+        price: utility.price,
+        date: utility.date,
+        description: utility.description || null
+      }]);
+
+    if (error) throw error;
+    await refreshData();
+  };
+
+  const updateUtility = async (id: string, utility: Partial<Utility>) => {
+    const updateData: any = {};
+    if (utility.itemName) updateData.item_name = utility.itemName;
+    if (utility.price !== undefined) updateData.price = utility.price;
+    if (utility.date) updateData.date = utility.date;
+    if (utility.description !== undefined) updateData.description = utility.description || null;
+
+    const { error } = await supabase
+      .from('utilities')
+      .update(updateData)
+      .eq('id', id);
+
+    if (error) throw error;
+    await refreshData();
+  };
+
+  const deleteUtility = async (id: string) => {
+    const { error } = await supabase
+      .from('utilities')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+    await refreshData();
+  };
+
+  // Supplier CRUD operations
+  const addSupplier = async (supplier: Omit<Supplier, 'id'>) => {
+    const { error } = await supabase
+      .from('suppliers')
+      .insert([{
+        hostel_id: supplier.hostelId,
+        name: supplier.name,
+        supplies: supplier.supplies,
+        amount: supplier.amount,
+        phone: supplier.phone || null
+      }]);
+
+    if (error) throw error;
+    await refreshData();
+  };
+
+  const updateSupplier = async (id: string, supplier: Partial<Supplier>) => {
+    const updateData: any = {};
+    if (supplier.name) updateData.name = supplier.name;
+    if (supplier.supplies) updateData.supplies = supplier.supplies;
+    if (supplier.amount !== undefined) updateData.amount = supplier.amount;
+    if (supplier.phone !== undefined) updateData.phone = supplier.phone || null;
+
+    const { error } = await supabase
+      .from('suppliers')
+      .update(updateData)
+      .eq('id', id);
+
+    if (error) throw error;
+    await refreshData();
+  };
+
+  const deleteSupplier = async (id: string) => {
+    const { error } = await supabase
+      .from('suppliers')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+    await refreshData();
+  };
+
   return (
     <HostelContext.Provider value={{
       hostels,
       payments,
+      expenses,
+      requirements,
+      staff,
+      staffSalaries,
+      utilities,
+      suppliers,
       addHostel,
       updateHostel,
       deleteHostel,
@@ -508,6 +981,22 @@ export function HostelProvider({ children }: { children: ReactNode }) {
       deleteStudent,
       recordPayment,
       getStudentPayments,
+      addExpense,
+      updateExpense,
+      deleteExpense,
+      addRequirement,
+      updateRequirement,
+      deleteRequirement,
+      addStaff,
+      updateStaff,
+      deleteStaff,
+      payStaffSalary,
+      addUtility,
+      updateUtility,
+      deleteUtility,
+      addSupplier,
+      updateSupplier,
+      deleteSupplier,
       isLoading,
       refreshData
     }}>

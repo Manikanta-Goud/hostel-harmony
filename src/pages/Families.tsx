@@ -12,9 +12,10 @@ import { useToast } from '@/hooks/use-toast';
 
 import MainLayout from '@/components/MainLayout';
 import { MobileNav } from '@/components/MobileNav';
+import { StudentProfileDialog } from '@/components/StudentProfileDialog';
 
 const Families = () => {
-    const { hostels, payments, updateStudent, recordPayment } = useHostel();
+    const { hostels, payments, updateStudent, recordPayment, deleteStudent } = useHostel();
     const { toast } = useToast();
     const [search, setSearch] = useState('');
     const [editingFamily, setEditingFamily] = useState<any>(null);
@@ -24,16 +25,17 @@ const Families = () => {
         email: '',
         emergencyContact: '',
         monthlyRent: 0,
-        memberCount: 0
+        memberCount: 0,
+        joinDate: ''
     });
 
     const currentMonth = format(new Date(), 'yyyy-MM');
 
-    const getAllStudentsFromRoom = (room: any, hostelName: string): any[] => {
-        let students = room.students?.map((s: any) => ({ ...s, hostelName, roomNumber: room.roomNumber, occupancyType: room.occupancyType })) || [];
+    const getAllStudentsFromRoom = (room: any, hostelName: string, hostelId: string, floorId: string): any[] => {
+        let students = room.students?.map((s: any) => ({ ...s, hostelName, hostelId, floorId, roomNumber: room.roomNumber, occupancyType: room.occupancyType })) || [];
         if (room.subRooms && room.subRooms.length > 0) {
             students = students.concat(
-                room.subRooms.flatMap((subRoom: any) => getAllStudentsFromRoom(subRoom, hostelName))
+                room.subRooms.flatMap((subRoom: any) => getAllStudentsFromRoom(subRoom, hostelName, hostelId, floorId))
             );
         }
         return students;
@@ -42,7 +44,7 @@ const Families = () => {
     const allStudents = useMemo(() => {
         return hostels.flatMap(h =>
             h.floors.flatMap(f =>
-                f.rooms.flatMap(r => getAllStudentsFromRoom(r, h.name))
+                f.rooms.flatMap(r => getAllStudentsFromRoom(r, h.name, h.id, f.id))
             )
         );
     }, [hostels]);
@@ -114,7 +116,8 @@ const Families = () => {
             email: student.email || '',
             emergencyContact: student.emergencyContact || '',
             monthlyRent: student.monthlyRent,
-            memberCount: student.memberCount || 1
+            memberCount: student.memberCount || 1,
+            joinDate: student.joinDate ? format(new Date(student.joinDate), 'yyyy-MM-dd') : ''
         });
     };
 
@@ -130,7 +133,8 @@ const Families = () => {
                     email: editFormData.email,
                     emergencyContact: editFormData.emergencyContact,
                     monthlyRent: Number(editFormData.monthlyRent),
-                    memberCount: Number(editFormData.memberCount)
+                    memberCount: Number(editFormData.memberCount),
+                    joinDate: editFormData.joinDate ? new Date(editFormData.joinDate).toISOString() : undefined
                 }
             );
             setEditingFamily(null);
@@ -148,23 +152,60 @@ const Families = () => {
         }
     };
 
+    const handleDeleteFamily = async () => {
+        if (!editingFamily) return;
+        if (!confirm('Are you sure you want to delete this family? This action cannot be undone.')) return;
+
+        try {
+            await deleteStudent(
+                'dummy-hostel', 'dummy-floor', 'dummy-room',
+                editingFamily.id
+            );
+            setEditingFamily(null);
+            toast({
+                title: "Success",
+                description: "Family deleted successfully"
+            });
+        } catch (error) {
+            console.error(error);
+            toast({
+                title: "Error",
+                description: "Failed to delete family",
+                variant: "destructive"
+            });
+        }
+    };
+
     return (
         <MainLayout>
-            <header className="bg-[#0f1f3a] border-b border-gray-700/50 sticky top-0 z-10 flex-shrink-0">
-                <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <MobileNav />
-                        <div className="flex items-center gap-3">
-                            <Users className="w-6 h-6 text-orange-500" />
-                            <h1 className="text-xl font-bold text-white">Families</h1>
-                        </div>
+            {/* Header - Desktop */}
+            <header className="bg-[#0f1f3a] border-b border-gray-700/50 p-6 sticky top-0 z-20 hidden md:block">
+                <div className="flex justify-between items-center max-w-7xl mx-auto w-full">
+                    <div>
+                        <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-orange-400 to-red-400">
+                            Families & Household
+                        </h1>
+                        <p className="text-gray-400 text-sm mt-1">Manage family occupants and multi-member residences</p>
                     </div>
-                    <div className="flex items-center gap-2 text-green-400 bg-green-500/10 px-3 py-1 rounded-full border border-green-500/20">
+                    <div className="flex items-center gap-2 text-green-400 bg-green-500/10 px-4 py-1.5 rounded-full border border-green-500/20">
                         <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                        <span className="text-xs font-medium">Real-time Data</span>
+                        <span className="text-xs font-bold uppercase tracking-widest">Live Sync</span>
                     </div>
                 </div>
             </header>
+
+            {/* Mobile Header */}
+            <div className="md:hidden p-4 bg-gradient-to-b from-[#0f1f3a] to-transparent">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <MobileNav />
+                        <div>
+                            <h1 className="text-2xl font-bold text-white tracking-tight">Families</h1>
+                            <p className="text-[10px] text-orange-400 font-bold uppercase tracking-widest mt-0.5">Household Registry</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             <div className="overflow-y-auto flex-1">
                 <main className="container mx-auto px-4 py-8">
@@ -233,13 +274,17 @@ const Families = () => {
                                             {filteredFamilies.map(family => {
                                                 const status = getPaymentStatus(family.id);
                                                 return (
-                                                    <TableRow key={family.id} className="border-gray-700 hover:bg-gray-800/50">
+                                                    <TableRow
+                                                        key={family.id}
+                                                        className="border-gray-700 hover:bg-gray-800/50 cursor-pointer"
+                                                        onClick={() => setEditingFamily(family)}
+                                                    >
                                                         <TableCell className="font-medium text-white">{family.name}</TableCell>
                                                         <TableCell>
-                                                            <a href={`tel:${family.phone}`} className="flex items-center gap-1 text-orange-400 hover:text-orange-300">
+                                                            <div className="flex items-center gap-1 text-orange-400 hover:text-orange-300">
                                                                 <Phone className="w-3 h-3" />
                                                                 {family.phone}
-                                                            </a>
+                                                            </div>
                                                         </TableCell>
                                                         <TableCell>
                                                             <div className="flex items-center gap-2 text-sm text-gray-400">
@@ -259,21 +304,9 @@ const Families = () => {
                                                                 <Button
                                                                     size="sm"
                                                                     variant="ghost"
-                                                                    onClick={() => openEditFamily(family)}
                                                                     className="text-gray-400 hover:text-white hover:bg-gray-700"
                                                                 >
                                                                     <Pencil className="w-3 h-3" />
-                                                                </Button>
-                                                                <Button
-                                                                    size="sm"
-                                                                    variant={status === 'paid' ? 'default' : 'outline'}
-                                                                    className={status === 'paid'
-                                                                        ? 'bg-green-600 hover:bg-green-700 text-white'
-                                                                        : 'border-green-600 text-green-500 hover:bg-green-900/30'}
-                                                                    onClick={() => handlePaymentToggle(family.id, family.monthlyRent)}
-                                                                >
-                                                                    <IndianRupee className="w-3 h-3 mr-1" />
-                                                                    {status === 'paid' ? 'Paid' : 'Mark Paid'}
                                                                 </Button>
                                                             </div>
                                                         </TableCell>
@@ -288,55 +321,16 @@ const Families = () => {
                     </Card>
                 </main>
 
-                {/* Edit Family Dialog */}
-                <Dialog open={!!editingFamily} onOpenChange={(open) => !open && setEditingFamily(null)}>
-                    <DialogContent className="bg-[#1a2332] border-gray-700 text-white">
-                        <DialogHeader>
-                            <DialogTitle className="text-white">Edit Family Details</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                            <div>
-                                <Label className="text-gray-300">Head Name *</Label>
-                                <Input
-                                    value={editFormData.name}
-                                    onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
-                                    placeholder="Family head name"
-                                    className="bg-[#0f1f3a] border-gray-600 text-white"
-                                />
-                            </div>
-                            <div>
-                                <Label className="text-gray-300">Phone *</Label>
-                                <Input
-                                    value={editFormData.phone}
-                                    onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
-                                    placeholder="Phone number"
-                                    className="bg-[#0f1f3a] border-gray-600 text-white"
-                                />
-                            </div>
-                            <div>
-                                <Label className="text-gray-300">Members Count</Label>
-                                <Input
-                                    type="number"
-                                    value={editFormData.memberCount}
-                                    onChange={(e) => setEditFormData({ ...editFormData, memberCount: Number(e.target.value) })}
-                                    placeholder="Count"
-                                    className="bg-[#0f1f3a] border-gray-600 text-white"
-                                />
-                            </div>
-                            <div>
-                                <Label className="text-gray-300">Monthly Rent *</Label>
-                                <Input
-                                    type="number"
-                                    value={editFormData.monthlyRent}
-                                    onChange={(e) => setEditFormData({ ...editFormData, monthlyRent: Number(e.target.value) })}
-                                    placeholder="Monthly rent amount"
-                                    className="bg-[#0f1f3a] border-gray-600 text-white"
-                                />
-                            </div>
-                            <Button onClick={handleEditFamily} className="w-full bg-orange-500 hover:bg-orange-600 text-white">Update Family</Button>
-                        </div>
-                    </DialogContent>
-                </Dialog>
+
+                {editingFamily && (
+                    <StudentProfileDialog
+                        student={editingFamily}
+                        isOpen={!!editingFamily}
+                        onClose={() => setEditingFamily(null)}
+                        hostelId={editingFamily.hostelId}
+                        floorId={editingFamily.floorId}
+                    />
+                )}
             </div>
         </MainLayout>
     );

@@ -12,9 +12,10 @@ import { useToast } from '@/hooks/use-toast';
 
 import MainLayout from '@/components/MainLayout';
 import { MobileNav } from '@/components/MobileNav';
+import { StudentProfileDialog } from '@/components/StudentProfileDialog';
 
 const Students = () => {
-  const { hostels, payments, updateStudent, recordPayment } = useHostel();
+  const { hostels, payments, updateStudent, recordPayment, deleteStudent } = useHostel();
   const { toast } = useToast();
   const [search, setSearch] = useState('');
   const [editingStudent, setEditingStudent] = useState<any>(null);
@@ -23,7 +24,8 @@ const Students = () => {
     phone: '',
     email: '',
     emergencyContact: '',
-    monthlyRent: 0
+    monthlyRent: 0,
+    joinDate: ''
   });
 
   // Payment Dialog State
@@ -37,11 +39,11 @@ const Students = () => {
 
   const currentMonth = format(new Date(), 'yyyy-MM');
 
-  const getAllStudentsFromRoom = (room: any, hostelName: string): any[] => {
-    let students = room.students?.map((s: any) => ({ ...s, hostelName, roomNumber: room.roomNumber, occupancyType: room.occupancyType })) || [];
+  const getAllStudentsFromRoom = (room: any, hostelName: string, hostelId: string, floorId: string): any[] => {
+    let students = room.students?.map((s: any) => ({ ...s, hostelName, hostelId, floorId, roomNumber: room.roomNumber, occupancyType: room.occupancyType })) || [];
     if (room.subRooms && room.subRooms.length > 0) {
       students = students.concat(
-        room.subRooms.flatMap((subRoom: any) => getAllStudentsFromRoom(subRoom, hostelName))
+        room.subRooms.flatMap((subRoom: any) => getAllStudentsFromRoom(subRoom, hostelName, hostelId, floorId))
       );
     }
     return students;
@@ -50,7 +52,7 @@ const Students = () => {
   const allStudents = useMemo(() => {
     return hostels.flatMap(h =>
       h.floors.flatMap(f =>
-        f.rooms.flatMap(r => getAllStudentsFromRoom(r, h.name))
+        f.rooms.flatMap(r => getAllStudentsFromRoom(r, h.name, h.id, f.id))
       )
     );
   }, [hostels]);
@@ -141,7 +143,8 @@ const Students = () => {
       phone: student.phone,
       email: student.email || '',
       emergencyContact: student.emergencyContact || '',
-      monthlyRent: student.monthlyRent
+      monthlyRent: student.monthlyRent,
+      joinDate: student.joinDate ? format(new Date(student.joinDate), 'yyyy-MM-dd') : ''
     });
   };
 
@@ -156,7 +159,8 @@ const Students = () => {
           phone: editFormData.phone,
           email: editFormData.email,
           emergencyContact: editFormData.emergencyContact,
-          monthlyRent: Number(editFormData.monthlyRent)
+          monthlyRent: Number(editFormData.monthlyRent),
+          joinDate: editFormData.joinDate ? new Date(editFormData.joinDate).toISOString() : undefined
         }
       );
       setEditingStudent(null);
@@ -174,6 +178,30 @@ const Students = () => {
     }
   };
 
+  const handleDeleteStudent = async () => {
+    if (!editingStudent) return;
+    if (!confirm('Are you sure you want to delete this student? This action cannot be undone.')) return;
+
+    try {
+      await deleteStudent(
+        'dummy-hostel', 'dummy-floor', 'dummy-room',
+        editingStudent.id
+      );
+      setEditingStudent(null);
+      toast({
+        title: "Success",
+        description: "Student deleted successfully"
+      });
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Error",
+        description: "Failed to delete student",
+        variant: "destructive"
+      });
+    }
+  };
+
   // Stats
   const paidCount = regularStudents.filter(s => getPaymentInfo(s.id).status === 'paid').length;
   const partialCount = regularStudents.filter(s => getPaymentInfo(s.id).status === 'partial').length;
@@ -184,198 +212,214 @@ const Students = () => {
 
   return (
     <MainLayout>
-      <header className="bg-[#0f1f3a] border-b border-gray-700/50 sticky top-0 z-10 flex-shrink-0">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <MobileNav />
-            <div className="flex items-center gap-3">
-              <Users className="w-6 h-6 text-orange-500" />
-              <h1 className="text-xl font-bold text-white">All Students</h1>
+      <div className="flex-1 flex flex-col bg-[#0a0f1a] text-white">
+        {/* Header - Desktop */}
+        <header className="bg-[#0f1f3a] border-b border-gray-700/50 p-6 sticky top-0 z-20 hidden md:block">
+          <div className="flex justify-between items-center max-w-7xl mx-auto w-full">
+            <div>
+              <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-orange-400 to-red-400">
+                Student Directory
+              </h1>
+              <p className="text-gray-400 text-sm mt-1">Manage and track occupant payments</p>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 bg-[#1a2332] px-4 py-2 rounded-xl border border-gray-700">
+                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                <span className="text-xs font-bold text-white uppercase tracking-widest">Real-time Data</span>
+              </div>
             </div>
           </div>
-          <div className="flex items-center gap-2 text-green-400 bg-green-500/10 px-3 py-1 rounded-full border border-green-500/20">
-            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-            <span className="text-xs font-medium">Real-time Data</span>
+        </header>
+
+        {/* Mobile Header */}
+        <div className="md:hidden p-4 bg-gradient-to-b from-[#0f1f3a] to-transparent">
+          <div className="flex items-center gap-3">
+            <MobileNav />
+            <div>
+              <h1 className="text-2xl font-bold text-white tracking-tight">Occupants</h1>
+              <p className="text-[10px] text-orange-400 font-bold uppercase tracking-widest mt-0.5">Live Directory</p>
+            </div>
           </div>
         </div>
-      </header>
 
-      <div className="overflow-y-auto flex-1">
-        <main className="container mx-auto px-4 py-8">
-          {/* Search */}
-          <div className="relative mb-6">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Search by name, phone, hostel, or room..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-10 bg-[#0f1f3a] border-gray-700 text-white placeholder:text-gray-500"
-            />
-          </div>
+        <main className="flex-1 overflow-y-auto p-4 md:p-8">
+          <div className="max-w-7xl mx-auto space-y-6 md:space-y-8">
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-10 bg-[#0f1f3a] border-gray-700 text-white placeholder:text-gray-500 h-11 rounded-xl"
+              />
+            </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <Card className="bg-[#0f1f3a] border-gray-700/50">
-              <CardContent className="pt-4 text-center">
-                <p className="text-2xl font-bold text-white">{regularStudents.length}</p>
-                <p className="text-xs text-gray-400">Total Students</p>
-              </CardContent>
-            </Card>
+            {/* Stats */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card className="bg-[#0f1f3a] border-white/5 shadow-xl">
+                <CardContent className="p-4 text-center">
+                  <p className="text-2xl font-bold text-white">{regularStudents.length}</p>
+                  <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Total</p>
+                </CardContent>
+              </Card>
 
-            <Card className="bg-green-950/30 border-green-700/50">
-              <CardContent className="pt-4 text-center">
-                <p className="text-2xl font-bold text-green-400">{paidCount}</p>
-                <p className="text-xs text-green-500">Paid Students</p>
-              </CardContent>
-            </Card>
+              <Card className="bg-emerald-500/10 border-emerald-500/20 shadow-xl">
+                <CardContent className="p-4 text-center">
+                  <p className="text-2xl font-bold text-emerald-400">{paidCount}</p>
+                  <p className="text-[10px] uppercase font-bold text-emerald-500 tracking-wider">Paid</p>
+                </CardContent>
+              </Card>
 
-            <Card className="bg-red-950/30 border-red-700/50">
-              <CardContent className="pt-4 text-center">
-                <p className="text-2xl font-bold text-red-400">{partialCount}</p>
-                <p className="text-xs text-red-500">Partially Paid</p>
-              </CardContent>
-            </Card>
+              <Card className="bg-red-500/10 border-red-500/20 shadow-xl">
+                <CardContent className="p-4 text-center">
+                  <p className="text-2xl font-bold text-red-400">{partialCount}</p>
+                  <p className="text-[10px] uppercase font-bold text-red-500 tracking-wider">Partial</p>
+                </CardContent>
+              </Card>
 
-            <Card className="bg-orange-950/30 border-orange-700/50">
-              <CardContent className="pt-4 text-center">
-                <p className="text-2xl font-bold text-orange-400">{pendingCount}</p>
-                <p className="text-xs text-orange-500">Pending Students</p>
-              </CardContent>
-            </Card>
-          </div>
+              <Card className="bg-orange-500/10 border-orange-500/20 shadow-xl">
+                <CardContent className="p-4 text-center">
+                  <p className="text-2xl font-bold text-orange-400">{pendingCount}</p>
+                  <p className="text-[10px] uppercase font-bold text-orange-500 tracking-wider">Due</p>
+                </CardContent>
+              </Card>
+            </div>
 
-          {/* Students Table */}
-          <Card className="bg-[#0f1f3a] border-gray-700/50">
-            <CardHeader className="border-b border-gray-700/50">
-              <CardTitle className="text-lg text-white">
-                {search ? `Found ${filteredStudents.length} students` : `${regularStudents.length} Students`}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              {filteredStudents.length === 0 ? (
-                <div className="text-center py-8 text-gray-400">
-                  <Users className="w-10 h-10 mx-auto mb-2 opacity-50" />
-                  <p>{search ? 'No students match your search' : 'No students added yet'}</p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="border-gray-700 hover:bg-gray-800/50">
-                        <TableHead className="text-gray-400">Name</TableHead>
-                        <TableHead className="text-gray-400">Phone</TableHead>
-                        <TableHead className="text-gray-400">Location</TableHead>
-                        <TableHead className="text-gray-400">Rent</TableHead>
-                        <TableHead className="text-right text-gray-400">Action</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
+            {/* Students List/Table */}
+            <Card className="bg-[#0f1f3a] border-white/5 shadow-2xl overflow-hidden">
+              <CardHeader className="border-b border-white/5 px-4 md:px-6">
+                <CardTitle className="text-lg text-white font-bold">
+                  {search ? `Found ${filteredStudents.length}` : `${regularStudents.length} Students`}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                {filteredStudents.length === 0 ? (
+                  <div className="text-center py-12 text-gray-400">
+                    <Users className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                    <p className="font-medium">{search ? 'No matches found' : 'No students added'}</p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Desktop Table View */}
+                    <div className="hidden md:block overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="border-white/5 hover:bg-transparent">
+                            <TableHead className="text-gray-400 text-[10px] uppercase font-bold tracking-widest">Occupant</TableHead>
+                            <TableHead className="text-gray-400 text-[10px] uppercase font-bold tracking-widest">Contact</TableHead>
+                            <TableHead className="text-gray-400 text-[10px] uppercase font-bold tracking-widest">Assignment</TableHead>
+                            <TableHead className="text-gray-400 text-[10px] uppercase font-bold tracking-widest">Monthly Rent</TableHead>
+                            <TableHead className="text-right text-gray-400 text-[10px] uppercase font-bold tracking-widest pr-6">Status</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredStudents.map(student => {
+                            const info = getPaymentInfo(student.id);
+                            const status = info.status;
+                            return (
+                              <TableRow key={student.id} className="border-white/5 hover:bg-white/5 cursor-pointer transition-colors" onClick={() => setEditingStudent(student)}>
+                                <TableCell className="py-4">
+                                  <div className="font-bold text-white">{student.name}</div>
+                                  {status === 'partial' && (
+                                    <div className="text-[10px] text-orange-400 flex items-center gap-1 mt-1 font-bold">
+                                      <AlertCircle className="w-3 h-3" /> Received: ₹{info.amount}
+                                    </div>
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  <a href={`tel:${student.phone}`} className="flex items-center gap-1.5 text-orange-400 hover:text-orange-300 font-medium text-sm transition-colors" onClick={(e) => e.stopPropagation()}>
+                                    <Phone className="w-3.5 h-3.5" /> {student.phone}
+                                  </a>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-2 text-xs text-gray-400">
+                                    <Building2 className="w-3.5 h-3.5 text-blue-400" />
+                                    <span className="whitespace-nowrap font-medium">{student.hostelName}</span>
+                                    <span className="text-gray-700">•</span>
+                                    <DoorOpen className="w-3.5 h-3.5 text-purple-400" />
+                                    <span className="whitespace-nowrap font-medium">Room {student.roomNumber}</span>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-gray-300 font-bold">
+                                  <div>₹{student.monthlyRent.toLocaleString()}</div>
+                                  {status === 'partial' && (
+                                    <div className="text-[10px] text-red-500 font-bold">Due: ₹{(info as any).remainingAmount}</div>
+                                  )}
+                                </TableCell>
+                                <TableCell className="text-right pr-6">
+                                  <Button
+                                    size="sm"
+                                    className={
+                                      status === 'paid' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 text-[10px] font-bold h-7 uppercase px-4' :
+                                        status === 'partial' ? 'bg-orange-500/10 text-orange-400 border border-orange-500/20 hover:bg-orange-500/20 text-[10px] font-bold h-7 uppercase px-4' :
+                                          'bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold h-7 uppercase px-4'
+                                    }
+                                    onClick={(e) => { e.stopPropagation(); handleOpenPayment(student); }}
+                                  >
+                                    {status === 'paid' ? 'Paid' : status === 'partial' ? 'Partial' : 'Mark Paid'}
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+
+                    {/* Mobile List View */}
+                    <div className="md:hidden divide-y divide-white/5">
                       {filteredStudents.map(student => {
                         const info = getPaymentInfo(student.id);
                         const status = info.status;
                         return (
-                          <TableRow key={student.id} className="border-gray-700 hover:bg-gray-800/50">
-                            <TableCell className="font-medium text-white">
-                              {student.name}
-                              {status === 'partial' && (
-                                <div className="text-xs text-red-400 flex items-center gap-1 mt-1 font-bold">
-                                  <AlertCircle className="w-3 h-3" />
-                                  Received: ₹{info.amount}
+                          <div key={student.id} className="p-4 active:bg-white/5 transition-colors" onClick={() => setEditingStudent(student)}>
+                            <div className="flex justify-between items-start mb-2">
+                              <div>
+                                <h3 className="font-bold text-white text-base">{student.name}</h3>
+                                <div className="flex items-center gap-2 text-[10px] text-gray-400 mt-1 uppercase tracking-wider font-bold">
+                                  <Building2 className="w-3 h-3 text-blue-400" /> {student.hostelName}
+                                  <span className="text-gray-700">•</span>
+                                  <DoorOpen className="w-3 h-3 text-purple-400" /> Room {student.roomNumber}
                                 </div>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <a href={`tel:${student.phone}`} className="flex items-center gap-1 text-orange-400 hover:text-orange-300">
-                                <Phone className="w-3 h-3" />
-                                {student.phone}
-                              </a>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2 text-sm text-gray-400">
-                                <Building2 className="w-3 h-3" />
-                                <span className="whitespace-nowrap">{student.hostelName}</span>
-                                <span className="text-gray-600">•</span>
-                                <DoorOpen className="w-3 h-3" />
-                                <span className="whitespace-nowrap">Room {student.roomNumber}</span>
                               </div>
-                            </TableCell>
-                            <TableCell className="text-gray-300">
-                              <div>₹{student.monthlyRent}</div>
-                              {status === 'partial' && (
-                                <div className="text-xs text-red-400">Due: ₹{(info as any).remainingAmount}</div>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex items-center justify-end gap-2">
+                              <div className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-tighter ${status === 'paid' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-400/20' :
+                                status === 'partial' ? 'bg-orange-500/10 text-orange-400 border border-orange-400/20' :
+                                  'bg-red-500/10 text-red-500 border border-red-500/20'
+                                }`}>
+                                {status === 'paid' ? 'Paid' : status === 'partial' ? 'Partial' : 'Due'}
+                              </div>
+                            </div>
+
+                            <div className="flex justify-between items-center mt-4">
+                              <div className="flex flex-col">
+                                <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Rent</span>
+                                <span className="text-sm font-bold text-white">₹{student.monthlyRent.toLocaleString()}</span>
+                              </div>
+                              <div className="flex gap-2">
+                                <a href={`tel:${student.phone}`} className="p-2 bg-[#1a2332] rounded-lg border border-gray-700 text-orange-400" onClick={(e) => e.stopPropagation()}>
+                                  <Phone className="w-4 h-4" />
+                                </a>
                                 <Button
                                   size="sm"
-                                  variant="ghost"
-                                  onClick={() => openEditStudent(student)}
-                                  className="text-gray-400 hover:text-white hover:bg-gray-700"
+                                  className="bg-blue-600 h-8 text-[10px] font-bold uppercase"
+                                  onClick={(e) => { e.stopPropagation(); handleOpenPayment(student); }}
                                 >
-                                  <Pencil className="w-3 h-3" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className={
-                                    status === 'paid' ? 'bg-green-600 text-white border-green-600 hover:bg-green-700' :
-                                      status === 'partial' ? 'bg-red-500/10 text-red-500 border-red-500 hover:bg-red-500/20' :
-                                        'border-green-600 text-green-500 hover:bg-green-900/10'
-                                  }
-                                  onClick={() => handleOpenPayment(student)}
-                                >
-                                  {status === 'paid' ? 'Paid' : status === 'partial' ? 'Partial' : 'Mark Paid'}
+                                  Update
                                 </Button>
                               </div>
-                            </TableCell>
-                          </TableRow>
+                            </div>
+                          </div>
                         );
                       })}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </main>
-
-        {/* Edit Student Dialog */}
-        <Dialog open={!!editingStudent} onOpenChange={(open) => !open && setEditingStudent(null)}>
-          <DialogContent className="bg-[#1a2332] border-gray-700 text-white">
-            <DialogHeader>
-              <DialogTitle>Edit Student</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label className="text-gray-300">Name</Label>
-                <Input
-                  value={editFormData.name}
-                  onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
-                  className="bg-[#0f1f3a] border-gray-600 text-white"
-                />
-              </div>
-              <div>
-                <Label className="text-gray-300">Phone</Label>
-                <Input
-                  value={editFormData.phone}
-                  onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
-                  className="bg-[#0f1f3a] border-gray-600 text-white"
-                />
-              </div>
-              <div>
-                <Label className="text-gray-300">Monthly Rent</Label>
-                <Input
-                  type="number"
-                  value={editFormData.monthlyRent}
-                  onChange={(e) => setEditFormData({ ...editFormData, monthlyRent: Number(e.target.value) })}
-                  className="bg-[#0f1f3a] border-gray-600 text-white"
-                />
-              </div>
-              <Button onClick={handleEditStudent} className="w-full bg-orange-500 hover:bg-orange-600 text-white">Update Student</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
 
         {/* Payment Logic Dialog */}
         <Dialog open={isPaymentOpen} onOpenChange={setIsPaymentOpen}>
@@ -437,6 +481,15 @@ const Students = () => {
           </DialogContent>
         </Dialog>
 
+        {editingStudent && (
+          <StudentProfileDialog
+            student={editingStudent}
+            isOpen={!!editingStudent}
+            onClose={() => setEditingStudent(null)}
+            hostelId={editingStudent.hostelId}
+            floorId={editingStudent.floorId}
+          />
+        )}
       </div>
     </MainLayout>
   );

@@ -13,7 +13,10 @@ import HostelDetail from "./pages/HostelDetail";
 import Rooms from "./pages/Rooms";
 import Students from "./pages/Students";
 import Families from "./pages/Families";
+import StaffOverview from "./pages/StaffOverview";
 import Payments from "./pages/Payments";
+import Expenses from "./pages/Expenses";
+import Requirements from "./pages/Requirements";
 import ProtectedRoute from "./components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
 
@@ -48,8 +51,17 @@ const App = () => (
               <Route path="/families" element={
                 <ProtectedRoute><Families /></ProtectedRoute>
               } />
+              <Route path="/staff" element={
+                <ProtectedRoute><StaffOverview /></ProtectedRoute>
+              } />
               <Route path="/payments" element={
                 <ProtectedRoute><Payments /></ProtectedRoute>
+              } />
+              <Route path="/expenses" element={
+                <ProtectedRoute><Expenses /></ProtectedRoute>
+              } />
+              <Route path="/requirements" element={
+                <ProtectedRoute><Requirements /></ProtectedRoute>
               } />
               <Route path="*" element={<NotFound />} />
             </Routes>
