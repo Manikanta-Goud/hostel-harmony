@@ -171,7 +171,7 @@ const Dashboard = () => {
                         </Button>
                       </div>
 
-                      <ScrollArea className="max-h-[400px]">
+                      <ScrollArea className="h-[500px] w-full">
                         {studentsWithPendingPayments.length === 0 ? (
                           <div className="p-8 text-center text-gray-400">
                             <Bell className="w-12 h-12 mx-auto mb-3 opacity-50" />
@@ -239,7 +239,7 @@ const Dashboard = () => {
                         <X className="w-4 h-4" />
                       </Button>
                     </div>
-                    <ScrollArea className="max-h-[60vh]">
+                    <ScrollArea className="h-[70vh] w-full">
                       {/* Same list logic as desktop but compact for mobile */}
                       <div className="divide-y divide-gray-700">
                         {studentsWithPendingPayments.map((student) => (
