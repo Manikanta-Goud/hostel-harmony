@@ -114,8 +114,31 @@ export interface Supplier {
   hostelId: string;
   name: string;
   supplies: string;
-  amount: number;
+  amount: number; // For fixed monthly cost suppliers
   phone?: string;
+  supplyType?: 'fixed' | 'per_unit'; // Type of pricing
+  perUnitPrice?: number; // Price per unit (e.g., per can for water)
+  currentMonthUnits?: number; // Current month's unit count (e.g., water cans)
+  totalAmount?: number; // Calculated total for per_unit suppliers
+  month?: string; // Track which month this record is for (format: "YYYY-MM")
+}
+
+export interface SupplierPayment {
+  id: string;
+  supplierId: string;
+  month: string; // Format: "YYYY-MM"
+  unitCount?: number; // Units delivered this month
+  amount: number; // Amount paid
+  paidDate: string;
+}
+
+export interface HostelRentPayment {
+  id: string;
+  hostelId: string;
+  month: string; // Format: "YYYY-MM"
+  amount: number;
+  paidDate?: string;
+  status: 'paid' | 'pending';
 }
 
 export interface Requirement {

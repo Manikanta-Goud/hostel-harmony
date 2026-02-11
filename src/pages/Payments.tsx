@@ -1,12 +1,14 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useHostel } from '@/contexts/HostelContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { IndianRupee, CheckCircle, AlertCircle, Building2, DoorOpen, Search } from 'lucide-react';
+import { IndianRupee, CheckCircle, AlertCircle, Building2, DoorOpen, Search, Plus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { format, subMonths } from 'date-fns';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import MainLayout from '@/components/MainLayout';
 import { MobileNav } from '@/components/MobileNav';
 
@@ -15,6 +17,46 @@ const Payments = () => {
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
   const [selectedHostel, setSelectedHostel] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Utility bill payments - stored in localStorage
+  const [hostelRentPayments, setHostelRentPayments] = useState<{ id: string; date: string; amount: number; month: string }[]>(() => {
+    const saved = localStorage.getItem('hostelRentPayments');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [electricityPayments, setElectricityPayments] = useState<{ id: string; date: string; amount: number; month: string; units?: number }[]>(() => {
+    const saved = localStorage.getItem('electricityPayments');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [gasPayments, setGasPayments] = useState<{ id: string; date: string; amount: number; month: string; units?: number }[]>(() => {
+    const saved = localStorage.getItem('gasPayments');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+
+  // Save to localStorage whenever payments change
+  useEffect(() => {
+    localStorage.setItem('hostelRentPayments', JSON.stringify(hostelRentPayments));
+  }, [hostelRentPayments]);
+
+  useEffect(() => {
+    localStorage.setItem('electricityPayments', JSON.stringify(electricityPayments));
+  }, [electricityPayments]);
+
+  useEffect(() => {
+    localStorage.setItem('gasPayments', JSON.stringify(gasPayments));
+  }, [gasPayments]);
+
+  // Dialog states for add forms
+  const [showRentDialog, setShowRentDialog] = useState(false);
+  const [showElectricityDialog, setShowElectricityDialog] = useState(false);
+  const [showGasDialog, setShowGasDialog] = useState(false);
+
+  // Form data states
+  const [rentForm, setRentForm] = useState({ amount: '', date: new Date().toISOString().split('T')[0] });
+  const [electricityForm, setElectricityForm] = useState({ amount: '', units: '', date: new Date().toISOString().split('T')[0] });
+  const [gasForm, setGasForm] = useState({ amount: '', units: '', date: new Date().toISOString().split('T')[0] });
 
   const monthOptions = useMemo(() => Array.from({ length: 12 }, (_, i) => {
     const date = subMonths(new Date(), i);
@@ -193,8 +235,8 @@ const Payments = () => {
           <div className="max-w-7xl mx-auto space-y-6 md:space-y-8">
 
             {/* Summary */}
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-              <Card className="bg-[#0f1f3a] border-white/5 shadow-xl col-span-2 lg:col-span-1">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card className="bg-[#0f1f3a] border-white/5 shadow-xl">
                 <CardContent className="p-4 md:p-6">
                   <div className="flex items-center justify-between">
                     <div>
@@ -233,6 +275,20 @@ const Payments = () => {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Hostel Rent Card */}
+              <Card className="bg-red-500/10 border-red-500/20 shadow-xl">
+                <CardContent className="p-4 md:p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-[10px] md:text-xs text-red-400 uppercase font-bold tracking-widest">Hostel Rent</p>
+                      <p className="text-xl md:text-3xl font-bold text-red-400 mt-1">₹1,20,000</p>
+                      <p className="text-[10px] font-bold text-red-500/60 mt-1 uppercase tracking-tighter">Monthly Expense</p>
+                    </div>
+                    <Building2 className="w-8 h-8 md:w-10 md:h-10 text-red-500/20" />
+                  </div>
+                </CardContent>
+              </Card>
             </div>
 
 
@@ -246,6 +302,15 @@ const Payments = () => {
                 </TabsTrigger>
                 <TabsTrigger value="paid" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white text-gray-400 gap-2 shrink-0">
                   <CheckCircle className="w-4 h-4" /> <span className="text-xs md:text-sm">Collected ({paidStudents.length})</span>
+                </TabsTrigger>
+                <TabsTrigger value="hostel-rent" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400 gap-2 shrink-0">
+                  <Building2 className="w-4 h-4" /> <span className="text-xs md:text-sm">Hostel Rent</span>
+                </TabsTrigger>
+                <TabsTrigger value="electricity" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-gray-400 gap-2 shrink-0">
+                  <DoorOpen className="w-4 h-4" /> <span className="text-xs md:text-sm">Electricity</span>
+                </TabsTrigger>
+                <TabsTrigger value="gas" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white text-gray-400 gap-2 shrink-0">
+                  <IndianRupee className="w-4 h-4" /> <span className="text-xs md:text-sm">Gas Bill</span>
                 </TabsTrigger>
               </TabsList>
 
@@ -357,10 +422,475 @@ const Payments = () => {
                   </CardContent>
                 </Card>
               </TabsContent>
+
+              {/* Hostel Rent Tab */}
+              <TabsContent value="hostel-rent" className="m-0">
+                <Card className="bg-[#0f1f3a] border-white/5 shadow-2xl">
+                  <CardHeader className="border-b border-white/5">
+                    <div className="flex justify-between items-center">
+                      <CardTitle className="text-lg text-red-400 flex items-center gap-2">
+                        <Building2 className="w-5 h-5" /> Hostel Rent Payments
+                      </CardTitle>
+                      <Button
+                        onClick={() => setShowRentDialog(true)}
+                        className="bg-red-600 hover:bg-red-700"
+                      >
+                        <Plus className="w-4 h-4 mr-2" /> Add Payment
+                      </Button>
+                    </div>
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="bg-red-500/10 p-4 rounded-lg border border-red-500/20">
+                        <p className="text-xs text-gray-400">Total Rent</p>
+                        <p className="text-2xl font-bold text-white">₹1,20,000</p>
+                        <p className="text-xs text-gray-500 mt-1">Monthly Target</p>
+                      </div>
+                      <div className="bg-emerald-500/10 p-4 rounded-lg border border-emerald-500/20">
+                        <p className="text-xs text-gray-400">Paid This Month</p>
+                        <p className="text-2xl font-bold text-emerald-400">
+                          ₹{hostelRentPayments
+                            .filter((p: any) => p.month === selectedMonth)
+                            .reduce((sum: number, p: any) => sum + p.amount, 0)
+                            .toLocaleString()}
+                        </p>
+                        <p className="text-xs text-emerald-600 mt-1">
+                          {hostelRentPayments.filter((p: any) => p.month === selectedMonth).length} payment(s)
+                        </p>
+                      </div>
+                      <div className="bg-orange-500/10 p-4 rounded-lg border border-orange-500/20">
+                        <p className="text-xs text-gray-400">Remaining</p>
+                        <p className="text-2xl font-bold text-orange-400">
+                          ₹{(120000 - hostelRentPayments
+                            .filter((p: any) => p.month === selectedMonth)
+                            .reduce((sum: number, p: any) => sum + p.amount, 0))
+                            .toLocaleString()}
+                        </p>
+                        <p className="text-xs text-orange-600 mt-1">
+                          {Math.round(((120000 - hostelRentPayments.filter((p: any) => p.month === selectedMonth).reduce((sum: number, p: any) => sum + p.amount, 0)) / 120000) * 100)}% pending
+                        </p>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <div className="divide-y divide-gray-700/50">
+                      {hostelRentPayments
+                        .filter((p: any) => p.month === selectedMonth)
+                        .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                        .map((payment: any) => (
+                          <div key={payment.id} className="p-4 hover:bg-gray-800/30 flex justify-between items-center">
+                            <div>
+                              <p className="font-bold text-white">Payment</p>
+                              <p className="text-sm text-gray-400">{format(new Date(payment.date), 'dd MMM yyyy')}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-xl font-bold text-emerald-400">₹{payment.amount.toLocaleString()}</p>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  if (confirm('Delete this payment?')) {
+                                    const updated = hostelRentPayments.filter((p: any) => p.id !== payment.id);
+                                    setHostelRentPayments(updated);
+                                  }
+                                }}
+                                className="text-red-400 hover:text-red-300 h-6"
+                              >
+                                Delete
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      {hostelRentPayments.filter((p: any) => p.month === selectedMonth).length === 0 && (
+                        <div className="p-12 text-center text-gray-500">
+                          No payments recorded for this month. Click "Add Payment" to record a payment.
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Electricity Bill Tab */}
+              <TabsContent value="electricity" className="m-0">
+                <Card className="bg-[#0f1f3a] border-white/5 shadow-2xl">
+                  <CardHeader className="border-b border-white/5">
+                    <div className="flex justify-between items-center">
+                      <CardTitle className="text-lg text-blue-400 flex items-center gap-2">
+                        <DoorOpen className="w-5 h-5" /> Electricity Bills
+                      </CardTitle>
+                      <Button
+                        onClick={() => setShowElectricityDialog(true)}
+                        className="bg-blue-600 hover:bg-blue-700"
+                      >
+                        <Plus className="w-4 h-4 mr-2" /> Add Bill
+                      </Button>
+                    </div>
+                    <div className="mt-4 grid grid-cols-3 gap-4">
+                      <div className="bg-blue-500/10 p-4 rounded-lg border border-blue-500/20">
+                        <p className="text-xs text-gray-400">This Month</p>
+                        <p className="text-2xl font-bold text-blue-400">
+                          ₹{electricityPayments
+                            .filter((p: any) => p.month === selectedMonth)
+                            .reduce((sum: number, p: any) => sum + p.amount, 0)
+                            .toLocaleString()}
+                        </p>
+                      </div>
+                      <div className="bg-gray-500/10 p-4 rounded-lg border border-gray-500/20">
+                        <p className="text-xs text-gray-400">Last Month</p>
+                        <p className="text-2xl font-bold text-gray-400">
+                          ₹{electricityPayments
+                            .filter((p: any) => {
+                              const lastMonth = format(subMonths(new Date(selectedMonth), 1), 'yyyy-MM');
+                              return p.month === lastMonth;
+                            })
+                            .reduce((sum: number, p: any) => sum + p.amount, 0)
+                            .toLocaleString()}
+                        </p>
+                      </div>
+                      <div className="bg-purple-500/10 p-4 rounded-lg border border-purple-500/20">
+                        <p className="text-xs text-gray-400">Units (This Month)</p>
+                        <p className="text-2xl font-bold text-purple-400">
+                          {electricityPayments
+                            .filter((p: any) => p.month === selectedMonth)
+                            .reduce((sum: number, p: any) => sum + (p.units || 0), 0)}
+                        </p>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <div className="divide-y divide-gray-700/50">
+                      {electricityPayments
+                        .filter((p: any) => p.month === selectedMonth)
+                        .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                        .map((payment: any) => (
+                          <div key={payment.id} className="p-4 hover:bg-gray-800/30 flex justify-between items-center">
+                            <div>
+                              <p className="font-bold text-white">Electricity Bill</p>
+                              <p className="text-sm text-gray-400">{format(new Date(payment.date), 'dd MMM yyyy')}</p>
+                              {payment.units && <p className="text-xs text-blue-400">{payment.units} units</p>}
+                            </div>
+                            <div className="text-right">
+                              <p className="text-xl font-bold text-blue-400">₹{payment.amount.toLocaleString()}</p>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  if (confirm('Delete this bill?')) {
+                                    const updated = electricityPayments.filter((p: any) => p.id !== payment.id);
+                                    setElectricityPayments(updated);
+                                  }
+                                }}
+                                className="text-red-400 hover:text-red-300 h-6"
+                              >
+                                Delete
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      {electricityPayments.filter((p: any) => p.month === selectedMonth).length === 0 && (
+                        <div className="p-12 text-center text-gray-500">
+                          No electricity bills recorded for this month. Click "Add Bill" to add one.
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Gas Bill Tab */}
+              <TabsContent value="gas" className="m-0">
+                <Card className="bg-[#0f1f3a] border-white/5 shadow-2xl">
+                  <CardHeader className="border-b border-white/5">
+                    <div className="flex justify-between items-center">
+                      <CardTitle className="text-lg text-purple-400 flex items-center gap-2">
+                        <IndianRupee className="w-5 h-5" /> Gas Bills
+                      </CardTitle>
+                      <Button
+                        onClick={() => setShowGasDialog(true)}
+                        className="bg-purple-600 hover:bg-purple-700"
+                      >
+                        <Plus className="w-4 h-4 mr-2" /> Add Bill
+                      </Button>
+                    </div>
+                    <div className="mt-4 grid grid-cols-3 gap-4">
+                      <div className="bg-purple-500/10 p-4 rounded-lg border border-purple-500/20">
+                        <p className="text-xs text-gray-400">This Month</p>
+                        <p className="text-2xl font-bold text-purple-400">
+                          ₹{gasPayments
+                            .filter((p: any) => p.month === selectedMonth)
+                            .reduce((sum: number, p: any) => sum + p.amount, 0)
+                            .toLocaleString()}
+                        </p>
+                      </div>
+                      <div className="bg-gray-500/10 p-4 rounded-lg border border-gray-500/20">
+                        <p className="text-xs text-gray-400">Last Month</p>
+                        <p className="text-2xl font-bold text-gray-400">
+                          ₹{gasPayments
+                            .filter((p: any) => {
+                              const lastMonth = format(subMonths(new Date(selectedMonth), 1), 'yyyy-MM');
+                              return p.month === lastMonth;
+                            })
+                            .reduce((sum: number, p: any) => sum + p.amount, 0)
+                            .toLocaleString()}
+                        </p>
+                      </div>
+                      <div className="bg-orange-500/10 p-4 rounded-lg border border-orange-500/20">
+                        <p className="text-xs text-gray-400">Units (This Month)</p>
+                        <p className="text-2xl font-bold text-orange-400">
+                          {gasPayments
+                            .filter((p: any) => p.month === selectedMonth)
+                            .reduce((sum: number, p: any) => sum + (p.units || 0), 0)}
+                        </p>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <div className="divide-y divide-gray-700/50">
+                      {gasPayments
+                        .filter((p: any) => p.month === selectedMonth)
+                        .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                        .map((payment: any) => (
+                          <div key={payment.id} className="p-4 hover:bg-gray-800/30 flex justify-between items-center">
+                            <div>
+                              <p className="font-bold text-white">Gas Bill</p>
+                              <p className="text-sm text-gray-400">{format(new Date(payment.date), 'dd MMM yyyy')}</p>
+                              {payment.units && <p className="text-xs text-purple-400">{payment.units} units</p>}
+                            </div>
+                            <div className="text-right">
+                              <p className="text-xl font-bold text-purple-400">₹{payment.amount.toLocaleString()}</p>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  if (confirm('Delete this bill?')) {
+                                    const updated = gasPayments.filter((p: any) => p.id !== payment.id);
+                                    setGasPayments(updated);
+                                  }
+                                }}
+                                className="text-red-400 hover:text-red-300 h-6"
+                              >
+                                Delete
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      {gasPayments.filter((p: any) => p.month === selectedMonth).length === 0 && (
+                        <div className="p-12 text-center text-gray-500">
+                          No gas bills recorded for this month. Click "Add Bill" to add one.
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
             </Tabs>
           </div>
         </main>
       </div>
+
+      {/* Hostel Rent Payment Dialog */}
+      <Dialog open={showRentDialog} onOpenChange={setShowRentDialog}>
+        <DialogContent className="bg-[#0f1f3a] border-red-500/20">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-red-400 flex items-center gap-2">
+              <Building2 className="w-6 h-6" />
+              Add Hostel Rent Payment
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="rent-amount" className="text-white">Payment Amount (₹)</Label>
+              <Input
+                id="rent-amount"
+                type="number"
+                placeholder="Enter amount (e.g., 40000)"
+                value={rentForm.amount}
+                onChange={(e) => setRentForm({ ...rentForm, amount: e.target.value })}
+                className="bg-[#1a2332] border-gray-700 text-white text-lg h-12"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="rent-date" className="text-white">Payment Date</Label>
+              <Input
+                id="rent-date"
+                type="date"
+                value={rentForm.date}
+                onChange={(e) => setRentForm({ ...rentForm, date: e.target.value })}
+                className="bg-[#1a2332] border-gray-700 text-white h-12"
+              />
+            </div>
+            <div className="bg-red-500/10 p-4 rounded-lg border border-red-500/20">
+              <p className="text-xs text-gray-400">Monthly Rent Target</p>
+              <p className="text-2xl font-bold text-white">₹1,20,000</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRentDialog(false)} className="border-gray-700">
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (rentForm.amount && rentForm.date) {
+                  const newPayment = {
+                    id: Date.now().toString(),
+                    amount: parseFloat(rentForm.amount),
+                    date: rentForm.date,
+                    month: selectedMonth
+                  };
+                  setHostelRentPayments([...hostelRentPayments, newPayment]);
+                  setRentForm({ amount: '', date: new Date().toISOString().split('T')[0] });
+                  setShowRentDialog(false);
+                }
+              }}
+              className="bg-red-600 hover:bg-red-700"
+              disabled={!rentForm.amount || !rentForm.date}
+            >
+              Add Payment
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Electricity Bill Dialog */}
+      <Dialog open={showElectricityDialog} onOpenChange={setShowElectricityDialog}>
+        <DialogContent className="bg-[#0f1f3a] border-blue-500/20">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-blue-400 flex items-center gap-2">
+              <DoorOpen className="w-6 h-6" />
+              Add Electricity Bill
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="elec-amount" className="text-white">Bill Amount (₹)</Label>
+              <Input
+                id="elec-amount"
+                type="number"
+                placeholder="Enter bill amount"
+                value={electricityForm.amount}
+                onChange={(e) => setElectricityForm({ ...electricityForm, amount: e.target.value })}
+                className="bg-[#1a2332] border-gray-700 text-white text-lg h-12"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="elec-units" className="text-white">Units Consumed (Optional)</Label>
+              <Input
+                id="elec-units"
+                type="number"
+                placeholder="Enter units consumed"
+                value={electricityForm.units}
+                onChange={(e) => setElectricityForm({ ...electricityForm, units: e.target.value })}
+                className="bg-[#1a2332] border-gray-700 text-white h-12"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="elec-date" className="text-white">Bill Date</Label>
+              <Input
+                id="elec-date"
+                type="date"
+                value={electricityForm.date}
+                onChange={(e) => setElectricityForm({ ...electricityForm, date: e.target.value })}
+                className="bg-[#1a2332] border-gray-700 text-white h-12"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowElectricityDialog(false)} className="border-gray-700">
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (electricityForm.amount && electricityForm.date) {
+                  const newPayment = {
+                    id: Date.now().toString(),
+                    amount: parseFloat(electricityForm.amount),
+                    units: electricityForm.units ? parseFloat(electricityForm.units) : undefined,
+                    date: electricityForm.date,
+                    month: selectedMonth
+                  };
+                  setElectricityPayments([...electricityPayments, newPayment]);
+                  setElectricityForm({ amount: '', units: '', date: new Date().toISOString().split('T')[0] });
+                  setShowElectricityDialog(false);
+                }
+              }}
+              className="bg-blue-600 hover:bg-blue-700"
+              disabled={!electricityForm.amount || !electricityForm.date}
+            >
+              Add Bill
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Gas Bill Dialog */}
+      <Dialog open={showGasDialog} onOpenChange={setShowGasDialog}>
+        <DialogContent className="bg-[#0f1f3a] border-purple-500/20">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-purple-400 flex items-center gap-2">
+              <IndianRupee className="w-6 h-6" />
+              Add Gas Bill
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="gas-amount" className="text-white">Bill Amount (₹)</Label>
+              <Input
+                id="gas-amount"
+                type="number"
+                placeholder="Enter bill amount"
+                value={gasForm.amount}
+                onChange={(e) => setGasForm({ ...gasForm, amount: e.target.value })}
+                className="bg-[#1a2332] border-gray-700 text-white text-lg h-12"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="gas-units" className="text-white">Units/Cylinders (Optional)</Label>
+              <Input
+                id="gas-units"
+                type="number"
+                placeholder="Enter cylinders count"
+                value={gasForm.units}
+                onChange={(e) => setGasForm({ ...gasForm, units: e.target.value })}
+                className="bg-[#1a2332] border-gray-700 text-white h-12"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="gas-date" className="text-white">Bill Date</Label>
+              <Input
+                id="gas-date"
+                type="date"
+                value={gasForm.date}
+                onChange={(e) => setGasForm({ ...gasForm, date: e.target.value })}
+                className="bg-[#1a2332] border-gray-700 text-white h-12"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowGasDialog(false)} className="border-gray-700">
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (gasForm.amount && gasForm.date) {
+                  const newPayment = {
+                    id: Date.now().toString(),
+                    amount: parseFloat(gasForm.amount),
+                    units: gasForm.units ? parseFloat(gasForm.units) : undefined,
+                    date: gasForm.date,
+                    month: selectedMonth
+                  };
+                  setGasPayments([...gasPayments, newPayment]);
+                  setGasForm({ amount: '', units: '', date: new Date().toISOString().split('T')[0] });
+                  setShowGasDialog(false);
+                }
+              }}
+              className="bg-purple-600 hover:bg-purple-700"
+              disabled={!gasForm.amount || !gasForm.date}
+            >
+              Add Bill
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 };

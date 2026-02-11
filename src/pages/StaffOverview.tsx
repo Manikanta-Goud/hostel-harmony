@@ -108,7 +108,10 @@ const StaffOverview = () => {
         name: '',
         supplies: '',
         amount: '',
-        phone: ''
+        phone: '',
+        supplyType: 'fixed' as 'fixed' | 'per_unit',
+        perUnitPrice: '',
+        currentMonthUnits: '0'
     });
 
     const resetForm = () => {
@@ -233,16 +236,26 @@ const StaffOverview = () => {
         e.preventDefault();
         if (!selectedHostel?.id) return;
         try {
-            await addSupplier({
+            const supplierData: any = {
                 hostelId: selectedHostel.id,
                 name: supplierFormData.name,
                 supplies: supplierFormData.supplies,
                 amount: parseFloat(supplierFormData.amount),
-                phone: supplierFormData.phone || undefined
-            });
+                phone: supplierFormData.phone || undefined,
+                supplyType: supplierFormData.supplyType,
+                month: selectedMonth
+            };
+
+            if (supplierFormData.supplyType === 'per_unit') {
+                supplierData.perUnitPrice = parseFloat(supplierFormData.perUnitPrice);
+                supplierData.currentMonthUnits = parseInt(supplierFormData.currentMonthUnits) || 0;
+                supplierData.totalAmount = parseFloat(supplierFormData.perUnitPrice) * parseInt(supplierFormData.currentMonthUnits);
+            }
+
+            await addSupplier(supplierData);
             toast({ title: 'Success', description: 'Supplier added successfully' });
             setIsAddSupplierDialogOpen(false);
-            setSupplierFormData({ name: '', supplies: '', amount: '', phone: '' });
+            setSupplierFormData({ name: '', supplies: '', amount: '', phone: '', supplyType: 'fixed', perUnitPrice: '', currentMonthUnits: '0' });
         } catch (error) {
             toast({ title: 'Error', description: 'Failed to add supplier', variant: 'destructive' });
         }
@@ -252,12 +265,22 @@ const StaffOverview = () => {
         e.preventDefault();
         if (!selectedSupplier) return;
         try {
-            await updateSupplier(selectedSupplier.id, {
+            const supplierData: any = {
                 name: supplierFormData.name,
                 supplies: supplierFormData.supplies,
                 amount: parseFloat(supplierFormData.amount),
-                phone: supplierFormData.phone || undefined
-            });
+                phone: supplierFormData.phone || undefined,
+                supplyType: supplierFormData.supplyType,
+                month: selectedMonth
+            };
+
+            if (supplierFormData.supplyType === 'per_unit') {
+                supplierData.perUnitPrice = parseFloat(supplierFormData.perUnitPrice);
+                supplierData.currentMonthUnits = parseInt(supplierFormData.currentMonthUnits) || 0;
+                supplierData.totalAmount = parseFloat(supplierFormData.perUnitPrice) * parseInt(supplierFormData.currentMonthUnits);
+            }
+
+            await updateSupplier(selectedSupplier.id, supplierData);
             toast({ title: 'Success', description: 'Supplier updated successfully' });
             setIsEditSupplierDialogOpen(false);
             setSelectedSupplier(null);
@@ -282,7 +305,10 @@ const StaffOverview = () => {
             name: supplier.name,
             supplies: supplier.supplies,
             amount: supplier.amount.toString(),
-            phone: supplier.phone || ''
+            phone: supplier.phone || '',
+            supplyType: supplier.supplyType || 'fixed',
+            perUnitPrice: supplier.perUnitPrice?.toString() || '',
+            currentMonthUnits: supplier.currentMonthUnits?.toString() || '0'
         });
         setIsEditSupplierDialogOpen(true);
     };
@@ -697,17 +723,48 @@ const StaffOverview = () => {
                                                     <div className="grid grid-cols-2 gap-4">
                                                         <div className="space-y-2">
                                                             <Label className="text-gray-300">Supplier Name *</Label>
-                                                            <Input value={supplierFormData.name} onChange={(e) => setSupplierFormData({ ...supplierFormData, name: e.target.value })} required placeholder="e.g., Daily Eggs" className="bg-[#1a2332] border-gray-600" />
+                                                            <Input value={supplierFormData.name} onChange={(e) => setSupplierFormData({ ...supplierFormData, name: e.target.value })} required placeholder="e.g., Shankar Anna" className="bg-[#1a2332] border-gray-600" />
                                                         </div>
                                                         <div className="space-y-2">
                                                             <Label className="text-gray-300">Supplies *</Label>
-                                                            <Input value={supplierFormData.supplies} onChange={(e) => setSupplierFormData({ ...supplierFormData, supplies: e.target.value })} required placeholder="e.g., Eggs, Milk" className="bg-[#1a2332] border-gray-600" />
+                                                            <Input value={supplierFormData.supplies} onChange={(e) => setSupplierFormData({ ...supplierFormData, supplies: e.target.value })} required placeholder="e.g., Water Cans" className="bg-[#1a2332] border-gray-600" />
                                                         </div>
-                                                        <div className="space-y-2">
-                                                            <Label className="text-gray-300">Amount (₹) *</Label>
-                                                            <Input type="number" value={supplierFormData.amount} onChange={(e) => setSupplierFormData({ ...supplierFormData, amount: e.target.value })} required className="bg-[#1a2332] border-gray-600" />
+                                                        <div className="space-y-2 col-span-2">
+                                                            <Label className="text-gray-300">Supply Type *</Label>
+                                                            <select
+                                                                value={supplierFormData.supplyType}
+                                                                onChange={(e) => setSupplierFormData({ ...supplierFormData, supplyType: e.target.value as 'fixed' | 'per_unit' })}
+                                                                className="w-full bg-[#1a2332] border border-gray-600 text-white rounded-md px-3 py-2"
+                                                            >
+                                                                <option value="fixed">Fixed Monthly Amount</option>
+                                                                <option value="per_unit">Per Unit (e.g., Water Cans)</option>
+                                                            </select>
                                                         </div>
-                                                        <div className="space-y-2">
+                                                        {supplierFormData.supplyType === 'fixed' ? (
+                                                            <div className="space-y-2 col-span-2">
+                                                                <Label className="text-gray-300">Monthly Amount (₹) *</Label>
+                                                                <Input type="number" value={supplierFormData.amount} onChange={(e) => setSupplierFormData({ ...supplierFormData, amount: e.target.value })} required className="bg-[#1a2332] border-gray-600" />
+                                                            </div>
+                                                        ) : (
+                                                            <>
+                                                                <div className="space-y-2">
+                                                                    <Label className="text-gray-300">Price Per Unit (₹) *</Label>
+                                                                    <Input type="number" value={supplierFormData.perUnitPrice} onChange={(e) => setSupplierFormData({ ...supplierFormData, perUnitPrice: e.target.value })} required placeholder="e.g., 15" className="bg-[#1a2332] border-gray-600" />
+                                                                    <p className="text-xs text-gray-500">Price per can/unit</p>
+                                                                </div>
+                                                                <div className="space-y-2">
+                                                                    <Label className="text-gray-300">Current Month Units</Label>
+                                                                    <Input type="number" value={supplierFormData.currentMonthUnits} onChange={(e) => setSupplierFormData({ ...supplierFormData, currentMonthUnits: e.target.value, amount: (parseFloat(supplierFormData.perUnitPrice) * parseInt(e.target.value) || 0).toString() })} placeholder="0" className="bg-[#1a2332] border-gray-600" />
+                                                                    <p className="text-xs text-gray-500">Number of cans this month</p>
+                                                                </div>
+                                                                <div className="space-y-2 col-span-2">
+                                                                    <Label className="text-gray-300">Total Amount (₹)</Label>
+                                                                    <Input type="number" value={supplierFormData.amount} readOnly className="bg-[#1a2332] border-gray-600 opacity-70" />
+                                                                    <p className="text-xs text-gray-500">Auto-calculated: {supplierFormData.currentMonthUnits} × ₹{supplierFormData.perUnitPrice}</p>
+                                                                </div>
+                                                            </>
+                                                        )}
+                                                        <div className="space-y-2 col-span-2">
                                                             <Label className="text-gray-300">Phone</Label>
                                                             <Input value={supplierFormData.phone} onChange={(e) => setSupplierFormData({ ...supplierFormData, phone: e.target.value })} className="bg-[#1a2332] border-gray-600" />
                                                         </div>
@@ -726,21 +783,34 @@ const StaffOverview = () => {
                                                 <TableRow className="border-gray-700 hover:bg-transparent">
                                                     <TableHead className="text-gray-400 font-medium">Supplier</TableHead>
                                                     <TableHead className="text-gray-400 font-medium">Supplies</TableHead>
-                                                    <TableHead className="text-gray-400 font-medium">Monthly Cost</TableHead>
+                                                    <TableHead className="text-gray-400 font-medium">Units/Amount</TableHead>
+                                                    <TableHead className="text-gray-400 font-medium">Total Cost</TableHead>
                                                     <TableHead className="text-right pr-6">Actions</TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
                                                 {filteredSuppliers.length === 0 ? (
                                                     <TableRow className="border-gray-700">
-                                                        <TableCell colSpan={4} className="text-center py-20 text-gray-500">No suppliers listed.</TableCell>
+                                                        <TableCell colSpan={5} className="text-center py-20 text-gray-500">No suppliers listed.</TableCell>
                                                     </TableRow>
                                                 ) : (
                                                     filteredSuppliers.map((supplier) => (
                                                         <TableRow key={supplier.id} className="border-gray-700 hover:bg-gray-800/30 group">
                                                             <TableCell className="font-medium text-white">{supplier.name}</TableCell>
                                                             <TableCell className="text-gray-400">{supplier.supplies}</TableCell>
-                                                            <TableCell className="font-bold text-purple-400">₹{supplier.amount.toLocaleString()}</TableCell>
+                                                            <TableCell className="text-gray-400">
+                                                                {supplier.supplyType === 'per_unit' ? (
+                                                                    <div className="flex flex-col">
+                                                                        <span className="text-sm font-bold text-blue-400">{supplier.currentMonthUnits || 0} units</span>
+                                                                        <span className="text-xs text-gray-500">@₹{supplier.perUnitPrice}/unit</span>
+                                                                    </div>
+                                                                ) : (
+                                                                    <span className="text-xs text-gray-500">Fixed</span>
+                                                                )}
+                                                            </TableCell>
+                                                            <TableCell className="font-bold text-purple-400">
+                                                                ₹{(supplier.supplyType === 'per_unit' ? (supplier.totalAmount || 0) : supplier.amount).toLocaleString()}
+                                                            </TableCell>
                                                             <TableCell className="text-right pr-6">
                                                                 <Button variant="ghost" size="sm" onClick={() => openEditSupplierDialog(supplier)} className="h-8 w-8 p-0 text-gray-400 hover:text-white hover:bg-gray-700"><Edit className="w-4 h-4" /></Button>
                                                                 <Button variant="ghost" size="sm" onClick={() => handleDeleteSupplier(supplier.id)} className="h-8 w-8 p-0 text-gray-400 hover:text-red-400 hover:bg-gray-700"><Trash2 className="w-4 h-4" /></Button>
@@ -857,22 +927,88 @@ const StaffOverview = () => {
                     </DialogContent>
                 </Dialog>
 
+                {/* Edit Staff Dialog */}
+                <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                    <DialogContent className="max-w-2xl bg-[#0f1f3a] border-gray-700 text-white">
+                        <DialogHeader>
+                            <DialogTitle className="text-2xl font-bold">Edit Staff Member</DialogTitle>
+                        </DialogHeader>
+                        <form onSubmit={handleEditStaff} className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label className="text-gray-300">Name *</Label>
+                                    <Input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required className="bg-[#1a2332] border-gray-600" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-gray-300">Phone *</Label>
+                                    <Input value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} required className="bg-[#1a2332] border-gray-600" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-gray-300">Role</Label>
+                                    <Input value={formData.role} onChange={(e) => setFormData({ ...formData, role: e.target.value })} placeholder="e.g., Cook, Cleaner" className="bg-[#1a2332] border-gray-600" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-gray-300">Monthly Salary *</Label>
+                                    <Input type="number" value={formData.monthlySalary || ''} onChange={(e) => setFormData({ ...formData, monthlySalary: parseInt(e.target.value) || 0 })} required className="bg-[#1a2332] border-gray-600" />
+                                </div>
+                            </div>
+                            <div className="flex justify-end gap-2 pt-4">
+                                <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)} className="border-gray-600">Cancel</Button>
+                                <Button type="submit" className="bg-blue-600 hover:bg-blue-700">Update Staff</Button>
+                            </div>
+                        </form>
+                    </DialogContent>
+                </Dialog>
+
                 {/* Edit Supplier Dialog */}
                 <Dialog open={isEditSupplierDialogOpen} onOpenChange={setIsEditSupplierDialogOpen}>
-                    <DialogContent className="max-w-md bg-[#0f1f3a] border-gray-700 text-white">
-                        <DialogHeader><DialogTitle>Edit Supplier</DialogTitle></DialogHeader>
+                    <DialogContent className="max-w-2xl bg-[#0f1f3a] border-gray-700 text-white">
+                        <DialogHeader><DialogTitle className="text-2xl font-bold">Edit Supplier</DialogTitle></DialogHeader>
                         <form onSubmit={handleUpdateSupplier} className="space-y-4">
-                            <div className="space-y-2">
-                                <Label>Supplier Name</Label>
-                                <Input value={supplierFormData.name} onChange={(e) => setSupplierFormData({ ...supplierFormData, name: e.target.value })} required className="bg-[#1a2332] border-gray-600" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Supplies</Label>
-                                <Input value={supplierFormData.supplies} onChange={(e) => setSupplierFormData({ ...supplierFormData, supplies: e.target.value })} required className="bg-[#1a2332] border-gray-700" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Monthly Amount (₹)</Label>
-                                <Input type="number" value={supplierFormData.amount} onChange={(e) => setSupplierFormData({ ...supplierFormData, amount: e.target.value })} required className="bg-[#1a2332] border-gray-600" />
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label>Supplier Name</Label>
+                                    <Input value={supplierFormData.name} onChange={(e) => setSupplierFormData({ ...supplierFormData, name: e.target.value })} required className="bg-[#1a2332] border-gray-600" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Supplies</Label>
+                                    <Input value={supplierFormData.supplies} onChange={(e) => setSupplierFormData({ ...supplierFormData, supplies: e.target.value })} required className="bg-[#1a2332] border-gray-700" />
+                                </div>
+                                <div className="space-y-2 col-span-2">
+                                    <Label className="text-gray-300">Supply Type *</Label>
+                                    <select
+                                        value={supplierFormData.supplyType}
+                                        onChange={(e) => setSupplierFormData({ ...supplierFormData, supplyType: e.target.value as 'fixed' | 'per_unit' })}
+                                        className="w-full bg-[#1a2332] border border-gray-600 text-white rounded-md px-3 py-2"
+                                    >
+                                        <option value="fixed">Fixed Monthly Amount</option>
+                                        <option value="per_unit">Per Unit (e.g., Water Cans)</option>
+                                    </select>
+                                </div>
+                                {supplierFormData.supplyType === 'fixed' ? (
+                                    <div className="space-y-2 col-span-2">
+                                        <Label>Monthly Amount (₹)</Label>
+                                        <Input type="number" value={supplierFormData.amount} onChange={(e) => setSupplierFormData({ ...supplierFormData, amount: e.target.value })} required className="bg-[#1a2332] border-gray-600" />
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="space-y-2">
+                                            <Label className="text-gray-300">Price Per Unit (₹) *</Label>
+                                            <Input type="number" value={supplierFormData.perUnitPrice} onChange={(e) => setSupplierFormData({ ...supplierFormData, perUnitPrice: e.target.value })} required placeholder="e.g., 15" className="bg-[#1a2332] border-gray-600" />
+                                            <p className="text-xs text-gray-500">Price per can/unit</p>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-gray-300">Current Month Units</Label>
+                                            <Input type="number" value={supplierFormData.currentMonthUnits} onChange={(e) => setSupplierFormData({ ...supplierFormData, currentMonthUnits: e.target.value, amount: (parseFloat(supplierFormData.perUnitPrice) * parseInt(e.target.value) || 0).toString() })} placeholder="0" className="bg-[#1a2332] border-gray-600" />
+                                            <p className="text-xs text-gray-500">Add new cans taken today</p>
+                                        </div>
+                                        <div className="space-y-2 col-span-2">
+                                            <Label className="text-gray-300">Total Amount (₹)</Label>
+                                            <Input type="number" value={supplierFormData.amount} readOnly className="bg-[#1a2332] border-gray-600 opacity-70" />
+                                            <p className="text-xs text-gray-500">Auto-calculated: {supplierFormData.currentMonthUnits} × ₹{supplierFormData.perUnitPrice}</p>
+                                        </div>
+                                    </>
+                                )}
                             </div>
                             <div className="flex justify-end gap-2 pt-2">
                                 <Button type="button" variant="outline" onClick={() => setIsEditSupplierDialogOpen(false)} className="border-gray-600">Cancel</Button>

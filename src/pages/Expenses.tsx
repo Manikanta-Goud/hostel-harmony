@@ -34,6 +34,17 @@ export default function Expenses() {
     const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
     const [searchTerm, setSearchTerm] = useState('');
 
+    // Load utility bills from localStorage
+    const electricityPayments = useMemo(() => {
+        const saved = localStorage.getItem('electricityPayments');
+        return saved ? JSON.parse(saved) : [];
+    }, [selectedMonth]);
+
+    const gasPayments = useMemo(() => {
+        const saved = localStorage.getItem('gasPayments');
+        return saved ? JSON.parse(saved) : [];
+    }, [selectedMonth]);
+
     const selectedHostel = hostels[0];
 
     // Recursive function to get all students with their room context
@@ -112,9 +123,23 @@ export default function Expenses() {
 
         const supplierExpenses = suppliers
             .filter(s => s.hostelId === selectedHostel.id)
-            .reduce((sum, s) => sum + s.amount, 0);
+            .reduce((sum, s) => {
+                // For per_unit suppliers, use totalAmount, otherwise use amount
+                const cost = s.supplyType === 'per_unit' ? (s.totalAmount || 0) : s.amount;
+                return sum + cost;
+            }, 0);
 
-        const totalExpenses = utilityExpenses + staffExpenses + supplierExpenses;
+        // Calculate electricity and gas expenses for the month
+        const electricityExpenses = electricityPayments
+            .filter((p: any) => p.month === selectedMonth)
+            .reduce((sum: number, p: any) => sum + p.amount, 0);
+
+        const gasExpenses = gasPayments
+            .filter((p: any) => p.month === selectedMonth)
+            .reduce((sum: number, p: any) => sum + p.amount, 0);
+
+        const hostelRent = 120000; // Fixed monthly hostel rent
+        const totalExpenses = utilityExpenses + staffExpenses + supplierExpenses + hostelRent + electricityExpenses + gasExpenses;
         const profit = totalRevenue - totalExpenses;
 
         return {
@@ -124,6 +149,9 @@ export default function Expenses() {
             utilityExpenses,
             staffExpenses,
             supplierExpenses,
+            hostelRent,
+            electricityExpenses,
+            gasExpenses,
             totalExpenses,
             profit
         };
@@ -382,9 +410,41 @@ export default function Expenses() {
                                         <div className="flex justify-between items-center p-4 bg-[#1a2332]/50 rounded-2xl border border-gray-700/50 hover:border-orange-500/30 transition-all hover:scale-[1.02]">
                                             <div className="flex items-center gap-3 md:gap-4">
                                                 <div className="p-2.5 md:p-3 bg-orange-500/10 rounded-xl border border-orange-500/10"><Package className="w-5 h-5 md:w-6 md:h-6 text-orange-400" /></div>
-                                                <p className="text-sm md:text-base font-bold text-white leading-tight">Operational Costs</p>
+                                                <div>
+                                                    <p className="text-sm md:text-base font-bold text-white leading-tight">Operational Costs</p>
+                                                    <p className="text-[10px] md:text-xs text-gray-500 font-medium">Utilities + Suppliers + Bills</p>
+                                                </div>
                                             </div>
-                                            <p className="text-lg md:text-2xl font-black text-white tracking-tight">₹{(monthlyMetrics.utilityExpenses + monthlyMetrics.supplierExpenses).toLocaleString()}</p>
+                                            <p className="text-lg md:text-2xl font-black text-white tracking-tight">₹{(monthlyMetrics.utilityExpenses + monthlyMetrics.supplierExpenses + monthlyMetrics.electricityExpenses + monthlyMetrics.gasExpenses).toLocaleString()}</p>
+                                        </div>
+
+                                        {/* Electricity Bill */}
+                                        <div className="flex justify-between items-center p-3 md:p-4 bg-[#1a2332]/30 rounded-xl border border-blue-500/20 ml-4 md:ml-8">
+                                            <div className="flex items-center gap-2 md:gap-3">
+                                                <div className="p-2 bg-blue-500/10 rounded-lg"><DollarSign className="w-4 h-4 md:w-5 md:h-5 text-blue-400" /></div>
+                                                <p className="text-xs md:text-sm font-semibold text-blue-300">Electricity Bill</p>
+                                            </div>
+                                            <p className="text-base md:text-lg font-bold text-blue-400">₹{monthlyMetrics.electricityExpenses.toLocaleString()}</p>
+                                        </div>
+
+                                        {/* Gas Bill */}
+                                        <div className="flex justify-between items-center p-3 md:p-4 bg-[#1a2332]/30 rounded-xl border border-purple-500/20 ml-4 md:ml-8">
+                                            <div className="flex items-center gap-2 md:gap-3">
+                                                <div className="p-2 bg-purple-500/10 rounded-lg"><DollarSign className="w-4 h-4 md:w-5 md:h-5 text-purple-400" /></div>
+                                                <p className="text-xs md:text-sm font-semibold text-purple-300">Gas Bill</p>
+                                            </div>
+                                            <p className="text-base md:text-lg font-bold text-purple-400">₹{monthlyMetrics.gasExpenses.toLocaleString()}</p>
+                                        </div>
+
+                                        <div className="flex justify-between items-center p-4 bg-[#1a2332]/50 rounded-2xl border border-gray-700/50 hover:border-red-500/30 transition-all hover:scale-[1.02]">
+                                            <div className="flex items-center gap-3 md:gap-4">
+                                                <div className="p-2.5 md:p-3 bg-red-500/10 rounded-xl border border-red-500/10"><Home className="w-5 h-5 md:w-6 md:h-6 text-red-400" /></div>
+                                                <div>
+                                                    <p className="text-sm md:text-base font-bold text-white leading-tight">Hostel Rent</p>
+                                                    <p className="text-[10px] md:text-xs text-gray-500 font-medium">Fixed Monthly</p>
+                                                </div>
+                                            </div>
+                                            <p className="text-lg md:text-2xl font-black text-white tracking-tight">₹{monthlyMetrics.hostelRent.toLocaleString()}</p>
                                         </div>
 
                                         <div className="pt-6 border-t border-gray-700/50">

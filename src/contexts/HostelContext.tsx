@@ -297,7 +297,12 @@ export function HostelProvider({ children }: { children: ReactNode }) {
         name: s.name,
         supplies: s.supplies,
         amount: s.amount,
-        phone: s.phone
+        phone: s.phone,
+        supplyType: s.supply_type || 'fixed',
+        perUnitPrice: s.per_unit_price,
+        currentMonthUnits: s.current_month_units || 0,
+        totalAmount: s.total_amount,
+        month: s.month
       }));
 
       setSuppliers(transformedSuppliers);
@@ -924,7 +929,12 @@ export function HostelProvider({ children }: { children: ReactNode }) {
         name: supplier.name,
         supplies: supplier.supplies,
         amount: supplier.amount,
-        phone: supplier.phone || null
+        phone: supplier.phone || null,
+        supply_type: supplier.supplyType || 'fixed',
+        per_unit_price: supplier.perUnitPrice || null,
+        current_month_units: supplier.currentMonthUnits || 0,
+        total_amount: supplier.totalAmount || null,
+        month: supplier.month || null
       }]);
 
     if (error) throw error;
@@ -937,6 +947,11 @@ export function HostelProvider({ children }: { children: ReactNode }) {
     if (supplier.supplies) updateData.supplies = supplier.supplies;
     if (supplier.amount !== undefined) updateData.amount = supplier.amount;
     if (supplier.phone !== undefined) updateData.phone = supplier.phone || null;
+    if (supplier.supplyType !== undefined) updateData.supply_type = supplier.supplyType;
+    if (supplier.perUnitPrice !== undefined) updateData.per_unit_price = supplier.perUnitPrice;
+    if (supplier.currentMonthUnits !== undefined) updateData.current_month_units = supplier.currentMonthUnits;
+    if (supplier.totalAmount !== undefined) updateData.total_amount = supplier.totalAmount;
+    if (supplier.month !== undefined) updateData.month = supplier.month;
 
     const { error } = await supabase
       .from('suppliers')
