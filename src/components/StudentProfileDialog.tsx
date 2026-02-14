@@ -178,134 +178,136 @@ export function StudentProfileDialog({ student, isOpen, onClose, hostelId, floor
                     </div>
                 </DialogHeader>
 
-                <ScrollArea className="flex-1 p-6">
-                    {isEditing ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label>Name *</Label>
-                                <Input value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="bg-[#0f1f3a] border-gray-600" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Phone *</Label>
-                                <Input value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} className="bg-[#0f1f3a] border-gray-600" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Aadhar Number</Label>
-                                <Input value={formData.aadharNumber} onChange={e => setFormData({ ...formData, aadharNumber: e.target.value })} className="bg-[#0f1f3a] border-gray-600" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Monthly Rent</Label>
-                                <Input type="number" value={formData.monthlyRent} onChange={e => setFormData({ ...formData, monthlyRent: e.target.value })} className="bg-[#0f1f3a] border-gray-600" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Join Date</Label>
-                                <Input type="date" value={formData.joinDate} onChange={e => setFormData({ ...formData, joinDate: e.target.value })} className="bg-[#0f1f3a] border-gray-600" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Occupation</Label>
-                                <Input value={formData.occupation} onChange={e => setFormData({ ...formData, occupation: e.target.value })} className="bg-[#0f1f3a] border-gray-600" placeholder="Student / Employee" />
-                            </div>
+                <ScrollArea className="flex-1 max-h-[calc(90vh-140px)]">
+                    <div className="p-6 pb-20">
+                        {isEditing ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label>Name *</Label>
+                                    <Input value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="bg-[#0f1f3a] border-gray-600" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Phone *</Label>
+                                    <Input value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} className="bg-[#0f1f3a] border-gray-600" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Aadhar Number</Label>
+                                    <Input value={formData.aadharNumber} onChange={e => setFormData({ ...formData, aadharNumber: e.target.value })} className="bg-[#0f1f3a] border-gray-600" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Monthly Rent</Label>
+                                    <Input type="number" value={formData.monthlyRent} onChange={e => setFormData({ ...formData, monthlyRent: e.target.value })} className="bg-[#0f1f3a] border-gray-600" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Join Date</Label>
+                                    <Input type="date" value={formData.joinDate} onChange={e => setFormData({ ...formData, joinDate: e.target.value })} className="bg-[#0f1f3a] border-gray-600" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Occupation</Label>
+                                    <Input value={formData.occupation} onChange={e => setFormData({ ...formData, occupation: e.target.value })} className="bg-[#0f1f3a] border-gray-600" placeholder="Student / Employee" />
+                                </div>
 
-                            <div className="col-span-2 space-y-2">
-                                <Label>Permanent Address</Label>
-                                <Input value={formData.permanentAddress} onChange={e => setFormData({ ...formData, permanentAddress: e.target.value })} className="bg-[#0f1f3a] border-gray-600" />
-                            </div>
-                            <div className="col-span-2 space-y-2">
-                                <Label>Work/College Address</Label>
-                                <Input value={formData.workAddress} onChange={e => setFormData({ ...formData, workAddress: e.target.value })} className="bg-[#0f1f3a] border-gray-600" />
-                            </div>
+                                <div className="col-span-2 space-y-2">
+                                    <Label>Permanent Address</Label>
+                                    <Input value={formData.permanentAddress} onChange={e => setFormData({ ...formData, permanentAddress: e.target.value })} className="bg-[#0f1f3a] border-gray-600" />
+                                </div>
+                                <div className="col-span-2 space-y-2">
+                                    <Label>Work/College Address</Label>
+                                    <Input value={formData.workAddress} onChange={e => setFormData({ ...formData, workAddress: e.target.value })} className="bg-[#0f1f3a] border-gray-600" />
+                                </div>
 
-                            <div className="space-y-2">
-                                <Label>Father's Name</Label>
-                                <Input value={formData.fatherName} onChange={e => setFormData({ ...formData, fatherName: e.target.value })} className="bg-[#0f1f3a] border-gray-600" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Mother's Name</Label>
-                                <Input value={formData.motherName} onChange={e => setFormData({ ...formData, motherName: e.target.value })} className="bg-[#0f1f3a] border-gray-600" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Parent Phone</Label>
-                                <Input value={formData.parentPhone} onChange={e => setFormData({ ...formData, parentPhone: e.target.value })} className="bg-[#0f1f3a] border-gray-600" />
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="space-y-6">
-                            {/* Basic Info */}
-                            <div className="grid grid-cols-2 gap-4 text-sm">
-                                <div className="flex items-center gap-2 text-gray-400">
-                                    <Phone className="w-4 h-4" />
-                                    <span className="text-white">{student.phone}</span>
+                                <div className="space-y-2">
+                                    <Label>Father's Name</Label>
+                                    <Input value={formData.fatherName} onChange={e => setFormData({ ...formData, fatherName: e.target.value })} className="bg-[#0f1f3a] border-gray-600" />
                                 </div>
-                                <div className="flex items-center gap-2 text-gray-400">
-                                    <Calendar className="w-4 h-4" />
-                                    <span className="text-white">Joined: {student.joinDate ? format(new Date(student.joinDate), 'PPP') : 'N/A'}</span>
+                                <div className="space-y-2">
+                                    <Label>Mother's Name</Label>
+                                    <Input value={formData.motherName} onChange={e => setFormData({ ...formData, motherName: e.target.value })} className="bg-[#0f1f3a] border-gray-600" />
                                 </div>
-                                <div className="flex items-center gap-2 text-gray-400">
-                                    <Briefcase className="w-4 h-4" />
-                                    <span className="text-white">{student.occupation || 'N/A'}</span>
-                                </div>
-                                <div className="flex items-center gap-2 text-gray-400">
-                                    <CreditCard className="w-4 h-4" />
-                                    <span className="text-white">Rent: ₹{student.monthlyRent}</span>
+                                <div className="space-y-2">
+                                    <Label>Parent Phone</Label>
+                                    <Input value={formData.parentPhone} onChange={e => setFormData({ ...formData, parentPhone: e.target.value })} className="bg-[#0f1f3a] border-gray-600" />
                                 </div>
                             </div>
-
-                            {/* Stay Statistics Card */}
-                            {stayStats && (
-                                <div className="bg-gradient-to-br from-orange-500/10 to-purple-500/10 p-4 rounded-lg border border-orange-500/20 space-y-3">
-                                    <h4 className="text-sm font-semibold text-orange-300 flex items-center gap-2">
-                                        <Clock className="w-4 h-4" /> Stay Statistics
-                                    </h4>
-                                    <div className="grid grid-cols-3 gap-4">
-                                        <div className="space-y-1">
-                                            <p className="text-xs text-gray-400">Joined On</p>
-                                            <p className="text-white font-semibold">{format(stayStats.joinDate, 'PPP')}</p>
-                                        </div>
-                                        <div className="space-y-1">
-                                            <p className="text-xs text-gray-400">Total Days</p>
-                                            <p className="text-white font-semibold text-lg">{stayStats.totalDays} days</p>
-                                        </div>
-                                        <div className="space-y-1">
-                                            <p className="text-xs text-gray-400">Total Months</p>
-                                            <p className="text-white font-semibold text-lg">{stayStats.totalMonths} months</p>
-                                        </div>
+                        ) : (
+                            <div className="space-y-6">
+                                {/* Basic Info */}
+                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                    <div className="flex items-center gap-2 text-gray-400">
+                                        <Phone className="w-4 h-4" />
+                                        <span className="text-white">{student.phone}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-gray-400">
+                                        <Calendar className="w-4 h-4" />
+                                        <span className="text-white">Joined: {student.joinDate ? format(new Date(student.joinDate), 'PPP') : 'N/A'}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-gray-400">
+                                        <Briefcase className="w-4 h-4" />
+                                        <span className="text-white">{student.occupation || 'N/A'}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-gray-400">
+                                        <CreditCard className="w-4 h-4" />
+                                        <span className="text-white">Rent: ₹{student.monthlyRent}</span>
                                     </div>
                                 </div>
-                            )}
 
-                            {/* Address Card */}
-                            <div className="bg-[#0f1f3a] p-4 rounded-lg space-y-2">
-                                <h4 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
-                                    <MapPin className="w-4 h-4" /> Addresses
-                                </h4>
-                                <div className="text-sm text-gray-400">
-                                    <p><strong className="text-gray-500">Permanent:</strong> {student.permanentAddress || 'Not provided'}</p>
-                                    <p className="mt-1"><strong className="text-gray-500">Work/College:</strong> {student.workAddress || 'Not provided'}</p>
+                                {/* Stay Statistics Card */}
+                                {stayStats && (
+                                    <div className="bg-gradient-to-br from-orange-500/10 to-purple-500/10 p-4 rounded-lg border border-orange-500/20 space-y-3">
+                                        <h4 className="text-sm font-semibold text-orange-300 flex items-center gap-2">
+                                            <Clock className="w-4 h-4" /> Stay Statistics
+                                        </h4>
+                                        <div className="grid grid-cols-3 gap-4">
+                                            <div className="space-y-1">
+                                                <p className="text-xs text-gray-400">Joined On</p>
+                                                <p className="text-white font-semibold">{format(stayStats.joinDate, 'PPP')}</p>
+                                            </div>
+                                            <div className="space-y-1">
+                                                <p className="text-xs text-gray-400">Total Days</p>
+                                                <p className="text-white font-semibold text-lg">{stayStats.totalDays} days</p>
+                                            </div>
+                                            <div className="space-y-1">
+                                                <p className="text-xs text-gray-400">Total Months</p>
+                                                <p className="text-white font-semibold text-lg">{stayStats.totalMonths} months</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Address Card */}
+                                <div className="bg-[#0f1f3a] p-4 rounded-lg space-y-2">
+                                    <h4 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
+                                        <MapPin className="w-4 h-4" /> Addresses
+                                    </h4>
+                                    <div className="text-sm text-gray-400">
+                                        <p><strong className="text-gray-500">Permanent:</strong> {student.permanentAddress || 'Not provided'}</p>
+                                        <p className="mt-1"><strong className="text-gray-500">Work/College:</strong> {student.workAddress || 'Not provided'}</p>
+                                    </div>
                                 </div>
+
+                                {/* Family Details */}
+                                <div className="bg-[#0f1f3a] p-4 rounded-lg space-y-2">
+                                    <h4 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
+                                        <User className="w-4 h-4" /> Family Details
+                                    </h4>
+                                    <div className="text-sm text-gray-400 grid grid-cols-2 gap-2">
+                                        <p><strong className="text-gray-500">Father:</strong> {student.fatherName || '-'}</p>
+                                        <p><strong className="text-gray-500">Mother:</strong> {student.motherName || '-'}</p>
+                                        <p className="col-span-2"><strong className="text-gray-500">Parent Phone:</strong> {student.parentPhone || '-'}</p>
+                                    </div>
+                                </div>
+
+                                {/* Aadhar */}
+                                {student.aadharNumber && (
+                                    <div className="bg-[#0f1f3a] p-4 rounded-lg">
+                                        <p className="text-sm text-gray-400">
+                                            <strong className="text-gray-500">Aadhar Number:</strong> {student.aadharNumber}
+                                        </p>
+                                    </div>
+                                )}
                             </div>
-
-                            {/* Family Details */}
-                            <div className="bg-[#0f1f3a] p-4 rounded-lg space-y-2">
-                                <h4 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
-                                    <User className="w-4 h-4" /> Family Details
-                                </h4>
-                                <div className="text-sm text-gray-400 grid grid-cols-2 gap-2">
-                                    <p><strong className="text-gray-500">Father:</strong> {student.fatherName || '-'}</p>
-                                    <p><strong className="text-gray-500">Mother:</strong> {student.motherName || '-'}</p>
-                                    <p className="col-span-2"><strong className="text-gray-500">Parent Phone:</strong> {student.parentPhone || '-'}</p>
-                                </div>
-                            </div>
-
-                            {/* Aadhar */}
-                            {student.aadharNumber && (
-                                <div className="bg-[#0f1f3a] p-4 rounded-lg">
-                                    <p className="text-sm text-gray-400">
-                                        <strong className="text-gray-500">Aadhar Number:</strong> {student.aadharNumber}
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </ScrollArea>
 
                 {!isPaymentOpen && (

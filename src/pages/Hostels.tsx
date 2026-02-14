@@ -83,9 +83,11 @@ const Hostels = () => {
               </h1>
               <p className="text-gray-400 text-sm mt-1">Configure your property portfolio and room structures</p>
             </div>
-            <Button onClick={() => setIsAddOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-2">
-              <Plus className="w-4 h-4" /> Add New Hostel
-            </Button>
+            {hostels.length === 0 && (
+              <Button onClick={() => setIsAddOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-2">
+                <Plus className="w-4 h-4" /> Add New Hostel
+              </Button>
+            )}
           </div>
         </header>
 
@@ -99,9 +101,11 @@ const Hostels = () => {
                 <p className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest mt-0.5">Asset Management</p>
               </div>
             </div>
-            <Button onClick={() => setIsAddOpen(true)} size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-8 rounded-lg">
-              <Plus className="w-4 h-4" />
-            </Button>
+            {hostels.length === 0 && (
+              <Button onClick={() => setIsAddOpen(true)} size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-8 rounded-lg">
+                <Plus className="w-4 h-4" />
+              </Button>
+            )}
           </div>
         </div>
 

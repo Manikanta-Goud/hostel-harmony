@@ -9,10 +9,12 @@ import { Building2, Lock, Mail } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const Login = () => {
+  const [isSignup, setIsSignup] = useState(false);
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, signup } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -20,22 +22,29 @@ const Login = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    const success = await login(email, password);
-    
-    if (success) {
-      toast({
-        title: "Welcome back!",
-        description: "You have successfully logged in.",
-      });
-      navigate('/dashboard');
+    if (isSignup) {
+      if (!name) {
+        toast({ title: "Error", description: "Name is required", variant: "destructive" });
+        setIsLoading(false);
+        return;
+      }
+      const success = await signup(name, email, password);
+      if (success) {
+        toast({ title: "Welcome!", description: "Account created successfully." });
+        navigate('/dashboard');
+      } else {
+        toast({ title: "Signup failed", description: "Email already exists.", variant: "destructive" });
+      }
     } else {
-      toast({
-        title: "Login failed",
-        description: "Invalid email or password. Please try again.",
-        variant: "destructive",
-      });
+      const success = await login(email, password);
+      if (success) {
+        toast({ title: "Welcome back!", description: "You have successfully logged in." });
+        navigate('/dashboard');
+      } else {
+        toast({ title: "Login failed", description: "Invalid email or password.", variant: "destructive" });
+      }
     }
-    
+
     setIsLoading(false);
   };
 
@@ -48,11 +57,29 @@ const Login = () => {
           </div>
           <div>
             <CardTitle className="text-2xl">Hostel Manager</CardTitle>
-            <CardDescription>Sign in to manage your hostels</CardDescription>
+            <CardDescription>
+              {isSignup ? 'Create an account to get started' : 'Sign in to manage your hostels'}
+            </CardDescription>
           </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {isSignup && (
+              <div className="space-y-2">
+                <Label htmlFor="name">Full Name</Label>
+                <div className="relative">
+                  <Input
+                    id="name"
+                    type="text"
+                    placeholder="Enter your name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="pl-4"
+                    required
+                  />
+                </div>
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <div className="relative">
@@ -84,15 +111,17 @@ const Login = () => {
               </div>
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Signing in...' : 'Sign In'}
+              {isLoading ? (isSignup ? 'Creating account...' : 'Signing in...') : (isSignup ? 'Sign Up' : 'Sign In')}
             </Button>
           </form>
-          <div className="mt-6 p-4 bg-muted rounded-lg">
-            <p className="text-sm text-muted-foreground text-center">
-              <strong>Demo credentials:</strong><br />
-              Email: admin@hostel.com<br />
-              Password: admin123
-            </p>
+
+          <div className="mt-4 text-center">
+            <button
+              onClick={() => setIsSignup(!isSignup)}
+              className="text-sm text-primary hover:underline"
+            >
+              {isSignup ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
+            </button>
           </div>
         </CardContent>
       </Card>

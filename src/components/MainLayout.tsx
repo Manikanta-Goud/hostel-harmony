@@ -14,7 +14,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
 
             {/* Main Content Area */}
             <main className="flex-1 flex flex-col min-w-0 h-full relative overflow-hidden">
-                <div className="flex-1 overflow-y-auto scrollbar-hide lg:scrollbar-default">
+                <div className="flex-1 overflow-y-auto lg:scrollbar-default">
                     {children}
                 </div>
             </main>

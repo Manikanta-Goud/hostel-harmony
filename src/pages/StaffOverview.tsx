@@ -473,7 +473,7 @@ const StaffOverview = () => {
 
                         {/* Tabs for different operational categories */}
                         <Tabs defaultValue="staff" className="space-y-6">
-                            <TabsList className="bg-[#0f1f3a] border border-gray-700/50 p-1 flex w-full md:w-fit gap-1 overflow-x-auto scrollbar-hide">
+                            <TabsList className="bg-[#0f1f3a] border border-gray-700/50 p-1 flex w-full md:w-fit gap-1 overflow-x-auto">
                                 <TabsTrigger value="staff" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-gray-400 gap-2 shrink-0">
                                     <Users className="w-4 h-4" /> <span className="text-xs md:text-sm">Staff</span>
                                 </TabsTrigger>

@@ -206,7 +206,7 @@ const Payments = () => {
               className="pl-10 h-10 bg-[#1a2332] border-gray-700 rounded-lg text-xs"
             />
           </div>
-          <div className="flex overflow-x-auto scrollbar-hide gap-2">
+          <div className="flex overflow-x-auto gap-2">
             <button
               onClick={() => setSelectedHostel('all')}
               className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider whitespace-nowrap border ${selectedHostel === 'all'
@@ -293,7 +293,7 @@ const Payments = () => {
 
 
             <Tabs defaultValue="pending" className="space-y-6">
-              <TabsList className="bg-[#0f1f3a] border border-gray-700/50 p-1 flex w-full md:w-fit gap-1 overflow-x-auto scrollbar-hide">
+              <TabsList className="bg-[#0f1f3a] border border-gray-700/50 p-1 flex w-full md:w-fit gap-1 overflow-x-auto">
                 <TabsTrigger value="pending" className="data-[state=active]:bg-orange-600 data-[state=active]:text-white text-gray-400 gap-2 shrink-0">
                   <AlertCircle className="w-4 h-4" /> <span className="text-xs md:text-sm">Pending ({pendingStudents.length})</span>
                 </TabsTrigger>

@@ -295,18 +295,7 @@ const Dashboard = () => {
           )}
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <Card className="bg-[#0f1f3a] border-gray-700/50">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-gray-400 flex items-center gap-2">
-                  <Building2 className="w-4 h-4" />
-                  Hostels
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-3xl font-bold text-white">{totalHostels}</p>
-              </CardContent>
-            </Card>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
 
             <Card className="bg-[#0f1f3a] border-gray-700/50">
               <CardHeader className="pb-2">
@@ -347,10 +336,7 @@ const Dashboard = () => {
 
           {/* Quick Actions */}
           <div className="flex flex-wrap gap-4 mb-8">
-            <Button onClick={() => navigate('/hostels')} size="lg" className="bg-orange-500 hover:bg-orange-600">
-              <Building2 className="w-4 h-4 mr-2" />
-              Manage Hostels
-            </Button>
+
             <Button onClick={() => navigate('/students')} variant="outline" size="lg" className="border-gray-600 text-gray-300 hover:bg-gray-800/30">
               <Users className="w-4 h-4 mr-2" />
               View All Students
@@ -364,11 +350,7 @@ const Dashboard = () => {
           {/* Hostels Overview */}
           <Card className="bg-[#0f1f3a] border-gray-700/50">
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-white">Your Hostels</CardTitle>
-              <Button size="sm" onClick={() => navigate('/hostels')} className="bg-orange-500 hover:bg-orange-600">
-                <Plus className="w-4 h-4 mr-2" />
-                Add Hostel
-              </Button>
+              <CardTitle className="text-white">Your Hostel</CardTitle>
             </CardHeader>
             <CardContent>
               {hostels.length === 0 ? (

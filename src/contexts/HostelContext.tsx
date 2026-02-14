@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Hostel, Floor, Room, Student, Payment, Expense, Requirement, Staff, StaffSalary, Utility, Supplier } from '@/types/hostel';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from './AuthContext';
 
 interface HostelContextType {
   hostels: Hostel[];
@@ -57,14 +58,27 @@ export function HostelProvider({ children }: { children: ReactNode }) {
   const [utilities, setUtilities] = useState<Utility[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { owner } = useAuth();
 
   // Load all data from Supabase
   const loadData = async () => {
+    if (!owner) {
+      setHostels([]);
+      setPayments([]);
+      setExpenses([]);
+      setRequirements([]);
+      setStaff([]);
+      setStaffSalaries([]);
+      setUtilities([]);
+      setSuppliers([]);
+      setIsLoading(false);
+      return;
+    }
     try {
       setIsLoading(true);
 
       // Fetch hostels with all nested data
-      const { data: hostelsData, error: hostelsError } = await supabase
+      let hostelsQuery = supabase
         .from('hostels')
         .select(`
           *,
@@ -75,7 +89,12 @@ export function HostelProvider({ children }: { children: ReactNode }) {
               students (*)
             )
           )
-        `)
+        `);
+
+      // Filter by owner.id
+      hostelsQuery = hostelsQuery.eq('owner_id', owner.id);
+
+      const { data: hostelsData, error: hostelsError } = await hostelsQuery
         .order('created_at', { ascending: true });
 
       if (hostelsError) throw hostelsError;
@@ -149,10 +168,29 @@ export function HostelProvider({ children }: { children: ReactNode }) {
 
       setHostels(transformedHostels);
 
-      // Fetch payments
-      const { data: paymentsData, error: paymentsError } = await supabase
-        .from('payments')
-        .select('*')
+      // Get all hostel IDs belonging to the user
+      const userHostelIds = hostelsData?.map(h => h.id) || [];
+
+      // Fetch payments - filter by students belonging to user's hostels
+      // To simplify, we'll fetch all and filter in JS if many, 
+      // but let's try to filter by student_id if we have students
+      const allStudentIds = (hostelsData || []).flatMap((h: any) =>
+        (h.floors || []).flatMap((f: any) =>
+          (f.rooms || []).flatMap((r: any) =>
+            (r.students || []).map((s: any) => s.id)
+          )
+        )
+      );
+
+      let paymentsQuery = supabase.from('payments').select('*');
+      if (allStudentIds.length > 0) {
+        paymentsQuery = paymentsQuery.in('student_id', allStudentIds);
+      } else {
+        // If no students, no payments
+        paymentsQuery = paymentsQuery.eq('student_id', '00000000-0000-0000-0000-000000000000');
+      }
+
+      const { data: paymentsData, error: paymentsError } = await paymentsQuery
         .order('created_at', { ascending: false });
 
       if (paymentsError) throw paymentsError;
@@ -174,6 +212,7 @@ export function HostelProvider({ children }: { children: ReactNode }) {
       const { data: expensesData, error: expensesError } = await supabase
         .from('expenses')
         .select('*')
+        .in('hostel_id', userHostelIds.length > 0 ? userHostelIds : ['00000000-0000-0000-0000-000000000000'])
         .order('date', { ascending: false });
 
       if (expensesError) {
@@ -196,6 +235,7 @@ export function HostelProvider({ children }: { children: ReactNode }) {
       const { data: requirementsData, error: requirementsError } = await supabase
         .from('requirements')
         .select('*')
+        .in('hostel_id', userHostelIds.length > 0 ? userHostelIds : ['00000000-0000-0000-0000-000000000000'])
         .order('date', { ascending: false });
 
       if (requirementsError) {
@@ -219,6 +259,7 @@ export function HostelProvider({ children }: { children: ReactNode }) {
       const { data: staffData, error: staffError } = await supabase
         .from('staff')
         .select('*')
+        .in('hostel_id', userHostelIds.length > 0 ? userHostelIds : ['00000000-0000-0000-0000-000000000000'])
         .order('created_at', { ascending: true });
 
       if (staffError && staffError.code !== 'PGRST116') {
@@ -240,9 +281,15 @@ export function HostelProvider({ children }: { children: ReactNode }) {
       setStaff(transformedStaff);
 
       // Fetch staff salaries
-      const { data: staffSalariesData, error: staffSalariesError } = await supabase
-        .from('staff_salaries')
-        .select('*')
+      const staffIds = (staffData || []).map(s => s.id);
+      let staffSalariesQuery = supabase.from('staff_salaries').select('*');
+      if (staffIds.length > 0) {
+        staffSalariesQuery = staffSalariesQuery.in('staff_id', staffIds);
+      } else {
+        staffSalariesQuery = staffSalariesQuery.eq('staff_id', '00000000-0000-0000-0000-000000000000');
+      }
+
+      const { data: staffSalariesData, error: staffSalariesError } = await staffSalariesQuery
         .order('created_at', { ascending: false });
 
       if (staffSalariesError && staffSalariesError.code !== 'PGRST116') {
@@ -264,6 +311,7 @@ export function HostelProvider({ children }: { children: ReactNode }) {
       const { data: utilitiesData, error: utilitiesError } = await supabase
         .from('utilities')
         .select('*')
+        .in('hostel_id', userHostelIds.length > 0 ? userHostelIds : ['00000000-0000-0000-0000-000000000000'])
         .order('date', { ascending: false });
 
       if (utilitiesError && utilitiesError.code !== 'PGRST116') {
@@ -285,6 +333,7 @@ export function HostelProvider({ children }: { children: ReactNode }) {
       const { data: suppliersData, error: suppliersError } = await supabase
         .from('suppliers')
         .select('*')
+        .in('hostel_id', userHostelIds.length > 0 ? userHostelIds : ['00000000-0000-0000-0000-000000000000'])
         .order('created_at', { ascending: true });
 
       if (suppliersError && suppliersError.code !== 'PGRST116') {
@@ -314,7 +363,13 @@ export function HostelProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    loadData();
+    if (owner) {
+      loadData();
+    }
+  }, [owner?.id]);
+
+  useEffect(() => {
+    if (!owner) return;
 
     // Set up real-time subscriptions for all tables
     const hostelSubscription = supabase
@@ -392,7 +447,7 @@ export function HostelProvider({ children }: { children: ReactNode }) {
       supabase.removeChannel(utilitiesSubscription);
       supabase.removeChannel(suppliersSubscription);
     };
-  }, []);
+  }, [owner]);
 
   const refreshData = async () => {
     await loadData();
@@ -403,7 +458,7 @@ export function HostelProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabase
         .from('hostels')
         .insert([{
-          owner_id: hostel.ownerId || 'default-owner',
+          owner_id: owner?.id || 'default-owner',
           name: hostel.name,
           address: hostel.address,
           total_capacity: hostel.totalCapacity || 0

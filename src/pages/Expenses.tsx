@@ -307,7 +307,7 @@ export default function Expenses() {
                     <Tabs defaultValue="report" className="space-y-6">
                         <div className="relative group/tabs">
                             <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-[#0a0f1a] to-transparent z-40 pointer-events-none md:hidden opacity-0 group-hover/tabs:opacity-100 transition-opacity" />
-                            <TabsList className="bg-[#0f1f3a]/80 backdrop-blur-md border border-gray-700/50 p-1.5 flex w-full md:w-fit gap-2 overflow-x-auto justify-start md:justify-center scrollbar-hide touch-pan-x">
+                            <TabsList className="bg-[#0f1f3a]/80 backdrop-blur-md border border-gray-700/50 p-1.5 flex w-full md:w-fit gap-2 overflow-x-auto justify-start md:justify-center touch-pan-x">
                                 <TabsTrigger value="report" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-gray-400 gap-2 px-6 whitespace-nowrap transition-all duration-300 flex-shrink-0">
                                     <TrendingUp className="w-4 h-4" />
                                     <span className="hidden sm:inline">Financial Report</span>
