@@ -43,7 +43,7 @@ import MainLayout from '@/components/MainLayout';
 import { MobileNav } from '@/components/MobileNav';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { format, parseISO, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
+import { format, parseISO, startOfMonth, endOfMonth, isWithinInterval, isValid } from 'date-fns';
 import { Utility, Supplier } from '@/types/hostel';
 import { Textarea } from '@/components/ui/textarea';
 
