@@ -1,73 +1,65 @@
-# Welcome to your Lovable project
+# HostelHub: Modern Hostel Management System
 
-## Project info
+HostelHub is a robust, responsive, and centralized platform designed to digitize and streamline hostel management. Say goodbye to messy spreadsheets and paper records, and say hello to seamless operations.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Features Included
 
-## How can I edit this code?
+- **Centralized Dashboard**: Get a birds-eye view of your properties, total students, families, and available capacities.
+- **Infrastructure Management**:
+  - Add and manage multiple Hostels/Properties.
+  - Drill down into specific Floors.
+  - Allocate distinct Units: from simple rooms to complex hierarchical Sections (Halls with Sub-rooms).
+  - Specify room types (Students vs. Private Families) and maximum capacity.
+- **Resident Management**:
+  - Securely register residents with details like Aadhar Number, Phone, Occupation, and Joining Date.
+  - Setup custom payment cycles (monthly or custom days).
+- **Financial Tracking**: 
+  - Dedicated modules for tracking ongoing Expenses.
+  - Logging and monitoring Payments from residents.
+- **Staff Overview**: Register staff and track salaries.
+- **Resident Hub (New)**: 
+  - A built-in public interface (`/student-form`) mimicking a Google Form.
+  - Allows residents to securely mark their daily attendance (with reasons for absence) and submit complaints.
+  - Submitted forms automatically surface to the administrator's **Student Desk**.
 
-There are several ways of editing your application.
+## Tech Stack
 
-**Use Lovable**
+- **Framework**: React via Vite
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS
+- **Icons**: Lucide React
+- **State Management**: React Context API
+- **UI Components**: Radix UI (shadcn/ui style components)
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## Getting Started
 
-Changes made via Lovable will be committed automatically to this repo.
+Follow these instructions to run the project on your local machine for development and testing.
 
-**Use your preferred IDE**
+### Prerequisites
+Make sure you have [Node.js](https://nodejs.org/) installed on your machine.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Installation
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+1. **Clone or Open the Repository:**
+   Ensure you are in the project root directory.
 
-Follow these steps:
+2. **Install Dependencies:**
+   ```bash
+   npm install
+   ```
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+3. **Start the Development Server:**
+   ```bash
+   npm run dev
+   ```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+4. **Access the Application:**
+   Open your browser and navigate to the address shown in your terminal (usually `http://localhost:8080`).
 
-# Step 3: Install the necessary dependencies.
-npm i
+### Navigating the App
+- **Admin Dashboard**: Accessible from the root/login screen. Use this to manage all property details.
+- **Student Form**: Direct your residents to the `/student-form` route. Any complaints or attendance records submitted here will instantly reflect in the **Student Desk** section of the admin dashboard.
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+---
 
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+*Note: For the purpose of this assignment setup, the Student Form (Attendance and Complaints) utilizes browser Local Storage to seamlessly demonstrate data flow without requiring a backend API configuration.*

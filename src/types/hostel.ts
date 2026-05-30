@@ -59,6 +59,8 @@ export interface Hostel {
   name: string;
   address: string;
   totalCapacity?: number;
+  propertyType?: 'owned' | 'rented';
+  rentAmount?: number;
   floors: Floor[];
 }
 
@@ -150,4 +152,22 @@ export interface Requirement {
   date: string;
   vendor?: string;
   notes?: string;
+}
+
+export interface Complaint {
+  id: string;
+  studentName: string;
+  roomName: string;
+  issue: string;
+  date: string;
+  status: 'open' | 'resolved';
+}
+
+export interface AttendanceRecord {
+  id: string;
+  studentName: string;
+  roomName: string;
+  date: string;
+  status: 'present' | 'absent';
+  reason?: string;
 }

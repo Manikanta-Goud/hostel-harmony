@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Hostel, Floor, Room, Student, Payment, Expense, Requirement, Staff, StaffSalary, Utility, Supplier } from '@/types/hostel';
+import { Hostel, Floor, Room, Student, Payment, Expense, Requirement, Staff, StaffSalary, Utility, Supplier, Complaint, AttendanceRecord } from '@/types/hostel';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from './AuthContext';
 
@@ -42,6 +42,11 @@ interface HostelContextType {
   addSupplier: (supplier: Omit<Supplier, 'id'>) => Promise<void>;
   updateSupplier: (id: string, supplier: Partial<Supplier>) => Promise<void>;
   deleteSupplier: (id: string) => Promise<void>;
+  complaints: Complaint[];
+  attendance: AttendanceRecord[];
+  addComplaint: (complaint: Omit<Complaint, 'id' | 'date' | 'status'>) => void;
+  resolveComplaint: (id: string) => void;
+  addAttendance: (attendance: Omit<AttendanceRecord, 'id' | 'date'>) => void;
   isLoading: boolean;
   refreshData: () => Promise<void>;
 }
@@ -57,8 +62,21 @@ export function HostelProvider({ children }: { children: ReactNode }) {
   const [staffSalaries, setStaffSalaries] = useState<StaffSalary[]>([]);
   const [utilities, setUtilities] = useState<Utility[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [complaints, setComplaints] = useState<Complaint[]>([]);
+  const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { owner } = useAuth();
+
+  useEffect(() => {
+    const storedComplaints = localStorage.getItem('hostel_complaints');
+    if (storedComplaints) {
+      try { setComplaints(JSON.parse(storedComplaints)); } catch (e) { }
+    }
+    const storedAttendance = localStorage.getItem('hostel_attendance');
+    if (storedAttendance) {
+      try { setAttendance(JSON.parse(storedAttendance)); } catch (e) { }
+    }
+  }, []);
 
   // Load all data from Supabase
   const loadData = async () => {
@@ -106,6 +124,8 @@ export function HostelProvider({ children }: { children: ReactNode }) {
         name: h.name,
         address: h.address,
         totalCapacity: h.total_capacity || 0,
+        propertyType: h.property_type || 'owned',
+        rentAmount: h.rent_amount || 0,
         floors: (h.floors || []).map((f: any) => {
           const allRooms = (f.rooms || []).map((r: any) => ({
             id: r.id,
@@ -461,7 +481,9 @@ export function HostelProvider({ children }: { children: ReactNode }) {
           owner_id: owner?.id || 'default-owner',
           name: hostel.name,
           address: hostel.address,
-          total_capacity: hostel.totalCapacity || 0
+          total_capacity: hostel.totalCapacity || 0,
+          property_type: hostel.propertyType || 'owned',
+          rent_amount: hostel.rentAmount || 0
         }])
         .select()
         .single();
@@ -484,6 +506,8 @@ export function HostelProvider({ children }: { children: ReactNode }) {
     if (hostel.name) updateData.name = hostel.name;
     if (hostel.address) updateData.address = hostel.address;
     if (hostel.totalCapacity !== undefined) updateData.total_capacity = hostel.totalCapacity;
+    if (hostel.propertyType !== undefined) updateData.property_type = hostel.propertyType;
+    if (hostel.rentAmount !== undefined) updateData.rent_amount = hostel.rentAmount;
 
     const { error } = await supabase
       .from('hostels')
@@ -1027,6 +1051,35 @@ export function HostelProvider({ children }: { children: ReactNode }) {
     await refreshData();
   };
 
+  const addComplaint = (complaintData: Omit<Complaint, 'id' | 'date' | 'status'>) => {
+    const newComplaint: Complaint = {
+      ...complaintData,
+      id: Math.random().toString(36).substr(2, 9),
+      date: new Date().toISOString(),
+      status: 'open'
+    };
+    const updated = [newComplaint, ...complaints];
+    setComplaints(updated);
+    localStorage.setItem('hostel_complaints', JSON.stringify(updated));
+  };
+
+  const resolveComplaint = (id: string) => {
+    const updated = complaints.map(c => c.id === id ? { ...c, status: 'resolved' as const } : c);
+    setComplaints(updated);
+    localStorage.setItem('hostel_complaints', JSON.stringify(updated));
+  };
+
+  const addAttendance = (attendanceData: Omit<AttendanceRecord, 'id' | 'date'>) => {
+    const newRecord: AttendanceRecord = {
+      ...attendanceData,
+      id: Math.random().toString(36).substr(2, 9),
+      date: new Date().toISOString()
+    };
+    const updated = [newRecord, ...attendance];
+    setAttendance(updated);
+    localStorage.setItem('hostel_attendance', JSON.stringify(updated));
+  };
+
   return (
     <HostelContext.Provider value={{
       hostels,
@@ -1067,6 +1120,11 @@ export function HostelProvider({ children }: { children: ReactNode }) {
       addSupplier,
       updateSupplier,
       deleteSupplier,
+      complaints,
+      attendance,
+      addComplaint,
+      resolveComplaint,
+      addAttendance,
       isLoading,
       refreshData
     }}>

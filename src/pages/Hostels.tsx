@@ -20,7 +20,7 @@ const Hostels = () => {
 
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingHostel, setEditingHostel] = useState<any>(null);
-  const [formData, setFormData] = useState({ name: '', address: '' });
+  const [formData, setFormData] = useState<{name: string, address: string, propertyType: 'owned'|'rented', rentAmount: string}>({ name: '', address: '', propertyType: 'owned', rentAmount: '' });
 
   const handleAdd = async () => {
     if (!formData.name || !formData.address) {
@@ -32,10 +32,12 @@ const Hostels = () => {
       await addHostel({
         name: formData.name,
         address: formData.address,
+        propertyType: formData.propertyType,
+        rentAmount: formData.propertyType === 'rented' ? Number(formData.rentAmount) : 0,
         ownerId: owner?.id || 'default-owner',
         totalCapacity: 0
       });
-      setFormData({ name: '', address: '' });
+      setFormData({ name: '', address: '', propertyType: 'owned', rentAmount: '' });
       setIsAddOpen(false);
       toast({ title: "Success", description: "Hostel added successfully" });
     } catch (error) {
@@ -45,15 +47,20 @@ const Hostels = () => {
 
   const openEdit = (hostel: any) => {
     setEditingHostel(hostel);
-    setFormData({ name: hostel.name, address: hostel.address });
+    setFormData({ name: hostel.name, address: hostel.address, propertyType: hostel.propertyType || 'owned', rentAmount: hostel.rentAmount ? hostel.rentAmount.toString() : '' });
   };
 
   const handleUpdate = async () => {
     if (!editingHostel) return;
     try {
-      await updateHostel(editingHostel.id, { name: formData.name, address: formData.address });
+      await updateHostel(editingHostel.id, { 
+        name: formData.name, 
+        address: formData.address,
+        propertyType: formData.propertyType,
+        rentAmount: formData.propertyType === 'rented' ? Number(formData.rentAmount) : 0
+      });
       setEditingHostel(null);
-      setFormData({ name: '', address: '' });
+      setFormData({ name: '', address: '', propertyType: 'owned', rentAmount: '' });
       toast({ title: "Success", description: "Hostel updated successfully" });
     } catch (error) {
       toast({ title: "Error", description: "Failed to update hostel", variant: "destructive" });
@@ -201,6 +208,28 @@ const Hostels = () => {
                     <Label>Address</Label>
                     <Input placeholder="Full street address" value={formData.address} onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))} className="bg-gray-800 border-gray-700" />
                   </div>
+                  
+                  <div className="space-y-2">
+                    <Label>Property Type</Label>
+                    <div className="flex gap-4 p-2 bg-gray-800/50 rounded-md border border-gray-700">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" checked={formData.propertyType === 'owned'} onChange={() => setFormData(prev => ({ ...prev, propertyType: 'owned' }))} className="text-emerald-500 bg-gray-900 border-gray-700 focus:ring-emerald-500" />
+                        <span className="text-sm">Owned Property</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" checked={formData.propertyType === 'rented'} onChange={() => setFormData(prev => ({ ...prev, propertyType: 'rented' }))} className="text-emerald-500 bg-gray-900 border-gray-700 focus:ring-emerald-500" />
+                        <span className="text-sm">Rented Property</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {formData.propertyType === 'rented' && (
+                    <div className="space-y-2">
+                      <Label>Monthly Rent Amount to pay Building Owner (₹)</Label>
+                      <Input type="number" min="0" placeholder="e.g. 50000" value={formData.rentAmount} onChange={(e) => setFormData(prev => ({ ...prev, rentAmount: e.target.value }))} className="bg-gray-800 border-gray-700" />
+                    </div>
+                  )}
+
                   <Button onClick={handleAdd} className="w-full bg-emerald-600 hover:bg-emerald-700">Add Property</Button>
                 </div>
               </DialogContent>
@@ -218,6 +247,28 @@ const Hostels = () => {
                     <Label>Address</Label>
                     <Input value={formData.address} onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))} className="bg-gray-800 border-gray-700" />
                   </div>
+
+                  <div className="space-y-2">
+                    <Label>Property Type</Label>
+                    <div className="flex gap-4 p-2 bg-gray-800/50 rounded-md border border-gray-700">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" checked={formData.propertyType === 'owned'} onChange={() => setFormData(prev => ({ ...prev, propertyType: 'owned' }))} className="text-emerald-500 bg-gray-900 border-gray-700 focus:ring-emerald-500" />
+                        <span className="text-sm">Owned Property</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" checked={formData.propertyType === 'rented'} onChange={() => setFormData(prev => ({ ...prev, propertyType: 'rented' }))} className="text-emerald-500 bg-gray-900 border-gray-700 focus:ring-emerald-500" />
+                        <span className="text-sm">Rented Property</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {formData.propertyType === 'rented' && (
+                    <div className="space-y-2">
+                      <Label>Monthly Rent Amount to pay Building Owner (₹)</Label>
+                      <Input type="number" min="0" placeholder="e.g. 50000" value={formData.rentAmount} onChange={(e) => setFormData(prev => ({ ...prev, rentAmount: e.target.value }))} className="bg-gray-800 border-gray-700" />
+                    </div>
+                  )}
+
                   <Button onClick={handleUpdate} className="w-full bg-emerald-600 hover:bg-emerald-700">Update Portfolio</Button>
                 </div>
               </DialogContent>

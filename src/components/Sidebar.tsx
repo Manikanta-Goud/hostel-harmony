@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Building2, LayoutDashboard, Layers, Users, CreditCard, LogOut, Receipt, UserCog } from 'lucide-react';
+import { Building2, LayoutDashboard, Layers, Users, CreditCard, LogOut, Receipt, UserCog, ClipboardList } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -19,13 +19,14 @@ const Sidebar = ({ className = '' }: SidebarProps) => {
         { name: 'Rooms', icon: Layers, path: '/rooms' },
         { name: 'Families', icon: Users, path: '/families' },
         { name: 'Students', icon: Users, path: '/students' },
+        { name: 'Student Desk', icon: ClipboardList, path: '/student-desk' },
         { name: 'Staff Overview', icon: UserCog, path: '/staff' },
         { name: 'Payments', icon: CreditCard, path: '/payments' },
         { name: 'Expenses', icon: Receipt, path: '/expenses' },
     ];
 
-    const handleLogout = () => {
-        logout();
+    const handleLogout = async () => {
+        await logout();
         navigate('/');
     };
 

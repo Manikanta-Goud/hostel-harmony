@@ -670,7 +670,7 @@ const HostelDetail = () => {
               <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
                 <div className="space-y-2"><Label>Room Identifier</Label><Input placeholder="101" value={roomData.roomNumber} onChange={(e) => setRoomData({ ...roomData, roomNumber: e.target.value })} className="bg-gray-800 border-gray-700" /></div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2"><Label>Max Pax</Label><Input type="number" value={roomData.capacity} onChange={(e) => setRoomData({ ...roomData, capacity: e.target.value })} className="bg-gray-800 border-gray-700" /></div>
+                  <div className="space-y-2"><Label>Capacity</Label><Input type="number" value={roomData.capacity} onChange={(e) => setRoomData({ ...roomData, capacity: e.target.value })} className="bg-gray-800 border-gray-700" /></div>
                   <div className="space-y-2"><Label>Monthly (₹)</Label><Input type="number" value={roomData.monthlyRent} onChange={(e) => setRoomData({ ...roomData, monthlyRent: e.target.value })} className="bg-gray-800 border-gray-700" /></div>
                 </div>
               </div>

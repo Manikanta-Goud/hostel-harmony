@@ -225,7 +225,7 @@ const StaffOverview = () => {
         setUtilityFormData({
             itemName: utility.itemName,
             price: utility.price.toString(),
-            date: utility.date.includes('T') ? format(parseISO(utility.date), 'yyyy-MM-dd') : utility.date,
+            date: utility.date.includes('T') ? ((d) => (isValid(d) ? format(d, 'yyyy-MM-dd') : 'N/A'))(parseISO(utility.date)) : utility.date,
             description: utility.description || ''
         });
         setIsEditUtilityDialogOpen(true);
@@ -561,7 +561,7 @@ const StaffOverview = () => {
                                                                     <span className="px-2 py-0.5 bg-blue-900/50 text-blue-300 border border-blue-800 rounded-full text-[10px] font-bold uppercase tracking-wider">
                                                                         {member.role || 'Staff'}
                                                                     </span>
-                                                                    <span className="text-[10px] text-gray-500 font-medium">Joined {format(parseISO(member.joinDate), 'MMM yyyy')}</span>
+                                                                    <span className="text-[10px] text-gray-500 font-medium">Joined {((d) => (isValid(d) ? format(d, 'MMM yyyy') : 'N/A'))(parseISO(member.joinDate))}</span>
                                                                 </div>
                                                             </div>
                                                             <div className="flex gap-1">
@@ -686,7 +686,7 @@ const StaffOverview = () => {
                                                 ) : (
                                                     filteredUtilities.map((utility) => (
                                                         <TableRow key={utility.id} className="border-gray-700 hover:bg-gray-800/30 group">
-                                                            <TableCell className="text-sm text-gray-400">{format(parseISO(utility.date), 'MMM dd, yyyy')}</TableCell>
+                                                            <TableCell className="text-sm text-gray-400">{((d) => (isValid(d) ? format(d, 'MMM dd, yyyy') : 'N/A'))(parseISO(utility.date))}</TableCell>
                                                             <TableCell className="font-medium text-white">{utility.itemName}</TableCell>
                                                             <TableCell className="font-bold text-orange-400">₹{utility.price.toLocaleString()}</TableCell>
                                                             <TableCell className="text-right pr-6">
@@ -885,7 +885,7 @@ const StaffOverview = () => {
                                                                     )}
                                                                     {isPaid && salaryRecord?.paidDate && (
                                                                         <span className="text-[9px] text-gray-500 font-medium tracking-tight">
-                                                                            Processed on {format(parseISO(salaryRecord.paidDate), 'MMM dd')}
+                                                                            Processed on {((d) => (isValid(d) ? format(d, 'MMM dd') : 'N/A'))(parseISO(salaryRecord.paidDate))}
                                                                         </span>
                                                                     )}
                                                                 </div>

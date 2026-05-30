@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Building2, ArrowRight, PlayCircle } from 'lucide-react';
+import { Building2, ArrowRight } from 'lucide-react';
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -15,12 +15,21 @@ const LandingPage = () => {
           </div>
           <span className="text-xl font-bold">HostelHub</span>
         </div>
-        <Button 
-          onClick={() => navigate('/login')}
-          className="bg-orange-500 hover:bg-orange-600 text-white font-medium px-6 rounded-md"
-        >
-          Owner Login
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button
+            onClick={() => navigate('/login')}
+            variant="ghost"
+            className="text-gray-300 hover:text-white hover:bg-white/5 font-medium px-5 rounded-md"
+          >
+            Sign In
+          </Button>
+          <Button
+            onClick={() => navigate('/login')}
+            className="bg-orange-500 hover:bg-orange-600 text-white font-medium px-6 rounded-md shadow-lg shadow-orange-500/20"
+          >
+            Get Started Free
+          </Button>
+        </div>
       </nav>
 
       {/* Hero Section */}
@@ -59,8 +68,8 @@ const LandingPage = () => {
               variant="outline"
               className="border-2 border-gray-600 hover:border-gray-500 bg-transparent hover:bg-white/5 text-white font-semibold px-8 py-6 text-lg rounded-lg flex items-center gap-2"
             >
-              <PlayCircle className="w-5 h-5" />
-              See How It Works
+              Sign Up Free
+              <ArrowRight className="w-5 h-5" />
             </Button>
           </div>
         </div>

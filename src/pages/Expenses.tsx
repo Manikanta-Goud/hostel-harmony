@@ -16,7 +16,7 @@ import {
     ArrowDownRight,
     Search
 } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, isWithinInterval, parseISO } from 'date-fns';
+import { format, startOfMonth, endOfMonth, isWithinInterval, parseISO, isValid } from 'date-fns';
 import MainLayout from '@/components/MainLayout';
 import { MobileNav } from '@/components/MobileNav';
 
@@ -36,13 +36,19 @@ export default function Expenses() {
 
     // Load utility bills from localStorage
     const electricityPayments = useMemo(() => {
-        const saved = localStorage.getItem('electricityPayments');
-        return saved ? JSON.parse(saved) : [];
+        try {
+            const saved = localStorage.getItem('electricityPayments');
+            const parsed = saved ? JSON.parse(saved) : [];
+            return Array.isArray(parsed) ? parsed : [];
+        } catch { return []; }
     }, [selectedMonth]);
 
     const gasPayments = useMemo(() => {
-        const saved = localStorage.getItem('gasPayments');
-        return saved ? JSON.parse(saved) : [];
+        try {
+            const saved = localStorage.getItem('gasPayments');
+            const parsed = saved ? JSON.parse(saved) : [];
+            return Array.isArray(parsed) ? parsed : [];
+        } catch { return []; }
     }, [selectedMonth]);
 
     const selectedHostel = hostels[0];
@@ -112,8 +118,9 @@ export default function Expenses() {
         const utilityExpenses = utilities
             .filter(u => {
                 if (u.hostelId !== selectedHostel.id) return false;
+                if (!u.date) return false;
                 const utilityDate = parseISO(u.date);
-                return isWithinInterval(utilityDate, { start: monthStart, end: monthEnd });
+                return isValid(utilityDate) && isWithinInterval(utilityDate, { start: monthStart, end: monthEnd });
             })
             .reduce((sum, u) => sum + u.price, 0);
 
@@ -138,7 +145,7 @@ export default function Expenses() {
             .filter((p: any) => p.month === selectedMonth)
             .reduce((sum: number, p: any) => sum + p.amount, 0);
 
-        const hostelRent = 120000; // Fixed monthly hostel rent
+        const hostelRent = selectedHostel?.propertyType === 'rented' ? (selectedHostel?.rentAmount || 0) : 0;
         const totalExpenses = utilityExpenses + staffExpenses + supplierExpenses + hostelRent + electricityExpenses + gasExpenses;
         const profit = totalRevenue - totalExpenses;
 
@@ -183,7 +190,9 @@ export default function Expenses() {
 
         const historicalUtilities = utilities.filter(u => {
             if (u.hostelId !== selectedHostel?.id) return false;
-            return isWithinInterval(parseISO(u.date), { start: monthStart, end: monthEnd });
+            if (!u.date) return false;
+            const d = parseISO(u.date);
+            return isValid(d) && isWithinInterval(d, { start: monthStart, end: monthEnd });
         }).map(u => ({ ...u, type: 'Utility' }));
 
         const activeSuppliers = suppliers.filter(s => s.hostelId === selectedHostel?.id)
@@ -490,7 +499,7 @@ export default function Expenses() {
                                                     </div>
                                                     <div className="flex items-center justify-between pt-1">
                                                         <span className="text-[10px] text-gray-500 font-medium">Transaction Date</span>
-                                                        <span className="text-xs text-gray-300 font-medium">{p.paidDate ? format(parseISO(p.paidDate), 'MMM dd, yyyy') : 'N/A'}</span>
+                                                        <span className="text-xs text-gray-300 font-medium">{p.paidDate ? ((d) => (isValid(d) ? format(d, 'MMM dd, yyyy') : 'N/A'))(parseISO(p.paidDate)) : 'N/A'}</span>
                                                     </div>
                                                 </div>
                                             ))
@@ -520,7 +529,7 @@ export default function Expenses() {
                                                                     Room {p.student.roomNumber}
                                                                 </span>
                                                             </TableCell>
-                                                            <TableCell className="text-gray-400 text-sm">{p.paidDate ? format(parseISO(p.paidDate), 'MMM dd, yyyy') : 'N/A'}</TableCell>
+                                                            <TableCell className="text-gray-400 text-sm">{p.paidDate ? ((d) => (isValid(d) ? format(d, 'MMM dd, yyyy') : 'N/A'))(parseISO(p.paidDate)) : 'N/A'}</TableCell>
                                                             <TableCell className="text-right font-black text-emerald-400 pr-6 text-lg">₹{p.amount.toLocaleString()}</TableCell>
                                                         </TableRow>
                                                     ))
@@ -562,7 +571,7 @@ export default function Expenses() {
                                                     </div>
                                                     <div className="flex items-center justify-between pt-1">
                                                         <span className="text-[10px] text-gray-500 font-medium">Transaction Date</span>
-                                                        <span className="text-xs text-gray-300 font-medium">{p.paidDate ? format(parseISO(p.paidDate), 'MMM dd, yyyy') : 'N/A'}</span>
+                                                        <span className="text-xs text-gray-300 font-medium">{p.paidDate ? ((d) => (isValid(d) ? format(d, 'MMM dd, yyyy') : 'N/A'))(parseISO(p.paidDate)) : 'N/A'}</span>
                                                     </div>
                                                 </div>
                                             ))
@@ -588,7 +597,7 @@ export default function Expenses() {
                                                         <TableRow key={p.id} className="border-gray-700 hover:bg-gray-800/30">
                                                             <TableCell className="font-bold text-white pl-6 py-4 px-4">{p.student.name}</TableCell>
                                                             <TableCell className="text-gray-400 px-4">Family Room {p.student.roomNumber}</TableCell>
-                                                            <TableCell className="text-gray-400 text-sm px-4">{p.paidDate ? format(parseISO(p.paidDate), 'MMM dd, yyyy') : 'N/A'}</TableCell>
+                                                            <TableCell className="text-gray-400 text-sm px-4">{p.paidDate ? ((d) => (isValid(d) ? format(d, 'MMM dd, yyyy') : 'N/A'))(parseISO(p.paidDate)) : 'N/A'}</TableCell>
                                                             <TableCell className="text-right font-black text-purple-400 pr-6 px-4 text-lg">₹{p.amount.toLocaleString()}</TableCell>
                                                         </TableRow>
                                                     ))
@@ -709,7 +718,7 @@ export default function Expenses() {
                                                     </div>
                                                     <div className="flex items-center justify-between pt-1">
                                                         <span className="text-[10px] text-gray-500 font-medium">Recorded On</span>
-                                                        <span className="text-xs text-gray-300 font-medium">{format(parseISO(item.date), 'MMM dd, yyyy')}</span>
+                                                        <span className="text-xs text-gray-300 font-medium">{((d) => (isValid(d) ? format(d, 'MMM dd, yyyy') : 'N/A'))(parseISO(item.date))}</span>
                                                     </div>
                                                 </div>
                                             ))
@@ -739,7 +748,7 @@ export default function Expenses() {
                                                                     {item.type}
                                                                 </span>
                                                             </TableCell>
-                                                            <TableCell className="text-gray-400 text-sm px-4">{format(parseISO(item.date), 'MMM dd, yyyy')}</TableCell>
+                                                            <TableCell className="text-gray-400 text-sm px-4">{((d) => (isValid(d) ? format(d, 'MMM dd, yyyy') : 'N/A'))(parseISO(item.date))}</TableCell>
                                                             <TableCell className="text-right font-black text-red-400 pr-6 text-lg px-4">₹{item.price.toLocaleString()}</TableCell>
                                                         </TableRow>
                                                     ))

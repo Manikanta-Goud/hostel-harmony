@@ -118,7 +118,7 @@ export default function Requirements() {
             itemName: requirement.itemName,
             quantity: requirement.quantity.toString(),
             amount: requirement.amount.toString(),
-            date: format(parseISO(requirement.date), 'yyyy-MM-dd'),
+            date: ((d) => (isValid(d) ? format(d, 'yyyy-MM-dd') : 'N/A'))(parseISO(requirement.date)),
             vendor: requirement.vendor || '',
             notes: requirement.notes || ''
         });
@@ -127,7 +127,7 @@ export default function Requirements() {
 
     const filteredRequirements = requirements.filter(r =>
         r.hostelId === selectedHostelId &&
-        format(parseISO(r.date), 'yyyy-MM') === selectedMonth &&
+        ((d) => (isValid(d) ? format(d, 'yyyy-MM') : 'N/A'))(parseISO(r.date)) === selectedMonth &&
         (r.itemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
             (r.vendor || '').toLowerCase().includes(searchTerm.toLowerCase()))
     );
@@ -282,7 +282,7 @@ export default function Requirements() {
                                                     {filteredRequirements.map(req => (
                                                         <TableRow key={req.id} className="border-white/5 hover:bg-white/5 group transition-colors">
                                                             <TableCell className="text-gray-400 text-xs">
-                                                                {format(parseISO(req.date), 'dd MMM yyyy')}
+                                                                {((d) => (isValid(d) ? format(d, 'dd MMM yyyy') : 'N/A'))(parseISO(req.date))}
                                                             </TableCell>
                                                             <TableCell className="font-bold text-white py-4">{req.itemName}</TableCell>
                                                             <TableCell className="text-right text-white font-medium">{req.quantity}</TableCell>
@@ -317,7 +317,7 @@ export default function Requirements() {
                                                         <div>
                                                             <h3 className="font-bold text-white text-base">{req.itemName}</h3>
                                                             <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">
-                                                                {format(parseISO(req.date), 'dd MMM yyyy')}
+                                                                {((d) => (isValid(d) ? format(d, 'dd MMM yyyy') : 'N/A'))(parseISO(req.date))}
                                                             </p>
                                                         </div>
                                                         <div className="text-right">

@@ -123,6 +123,17 @@ const Payments = () => {
 
 
 
+  const hostelRentTarget = useMemo(() => {
+    if (selectedHostel === 'all') {
+      return hostels.reduce((sum, h) => {
+        return sum + (h.propertyType === 'rented' ? (h.rentAmount || 0) : 0);
+      }, 0);
+    } else {
+      const h = hostels.find(h => h.id === selectedHostel);
+      return (h?.propertyType === 'rented') ? (h?.rentAmount || 0) : 0;
+    }
+  }, [hostels, selectedHostel]);
+
   return (
     <MainLayout>
       <div className="flex-1 flex flex-col bg-[#0a0f1a] text-white">
@@ -277,18 +288,20 @@ const Payments = () => {
               </Card>
 
               {/* Hostel Rent Card */}
-              <Card className="bg-red-500/10 border-red-500/20 shadow-xl">
-                <CardContent className="p-4 md:p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-[10px] md:text-xs text-red-400 uppercase font-bold tracking-widest">Hostel Rent</p>
-                      <p className="text-xl md:text-3xl font-bold text-red-400 mt-1">₹1,20,000</p>
-                      <p className="text-[10px] font-bold text-red-500/60 mt-1 uppercase tracking-tighter">Monthly Expense</p>
+              {hostelRentTarget > 0 && (
+                <Card className="bg-red-500/10 border-red-500/20 shadow-xl">
+                  <CardContent className="p-4 md:p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-[10px] md:text-xs text-red-400 uppercase font-bold tracking-widest">Hostel Rent</p>
+                        <p className="text-xl md:text-3xl font-bold text-red-400 mt-1">₹{hostelRentTarget.toLocaleString()}</p>
+                        <p className="text-[10px] font-bold text-red-500/60 mt-1 uppercase tracking-tighter">Monthly Expense</p>
+                      </div>
+                      <Building2 className="w-8 h-8 md:w-10 md:h-10 text-red-500/20" />
                     </div>
-                    <Building2 className="w-8 h-8 md:w-10 md:h-10 text-red-500/20" />
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              )}
             </div>
 
 
@@ -303,9 +316,11 @@ const Payments = () => {
                 <TabsTrigger value="paid" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white text-gray-400 gap-2 shrink-0">
                   <CheckCircle className="w-4 h-4" /> <span className="text-xs md:text-sm">Collected ({paidStudents.length})</span>
                 </TabsTrigger>
-                <TabsTrigger value="hostel-rent" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400 gap-2 shrink-0">
-                  <Building2 className="w-4 h-4" /> <span className="text-xs md:text-sm">Hostel Rent</span>
-                </TabsTrigger>
+                {hostelRentTarget > 0 && (
+                  <TabsTrigger value="hostel-rent" className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-400 gap-2 shrink-0">
+                    <Building2 className="w-4 h-4" /> <span className="text-xs md:text-sm">Hostel Rent</span>
+                  </TabsTrigger>
+                )}
                 <TabsTrigger value="electricity" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-gray-400 gap-2 shrink-0">
                   <DoorOpen className="w-4 h-4" /> <span className="text-xs md:text-sm">Electricity</span>
                 </TabsTrigger>
@@ -424,52 +439,53 @@ const Payments = () => {
               </TabsContent>
 
               {/* Hostel Rent Tab */}
-              <TabsContent value="hostel-rent" className="m-0">
-                <Card className="bg-[#0f1f3a] border-white/5 shadow-2xl">
-                  <CardHeader className="border-b border-white/5">
-                    <div className="flex justify-between items-center">
-                      <CardTitle className="text-lg text-red-400 flex items-center gap-2">
-                        <Building2 className="w-5 h-5" /> Hostel Rent Payments
-                      </CardTitle>
-                      <Button
-                        onClick={() => setShowRentDialog(true)}
-                        className="bg-red-600 hover:bg-red-700"
-                      >
-                        <Plus className="w-4 h-4 mr-2" /> Add Payment
-                      </Button>
-                    </div>
-                    <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="bg-red-500/10 p-4 rounded-lg border border-red-500/20">
-                        <p className="text-xs text-gray-400">Total Rent</p>
-                        <p className="text-2xl font-bold text-white">₹1,20,000</p>
-                        <p className="text-xs text-gray-500 mt-1">Monthly Target</p>
+              {hostelRentTarget > 0 && (
+                <TabsContent value="hostel-rent" className="m-0">
+                  <Card className="bg-[#0f1f3a] border-white/5 shadow-2xl">
+                    <CardHeader className="border-b border-white/5">
+                      <div className="flex justify-between items-center">
+                        <CardTitle className="text-lg text-red-400 flex items-center gap-2">
+                          <Building2 className="w-5 h-5" /> Hostel Rent Payments
+                        </CardTitle>
+                        <Button
+                          onClick={() => setShowRentDialog(true)}
+                          className="bg-red-600 hover:bg-red-700"
+                        >
+                          <Plus className="w-4 h-4 mr-2" /> Add Payment
+                        </Button>
                       </div>
-                      <div className="bg-emerald-500/10 p-4 rounded-lg border border-emerald-500/20">
-                        <p className="text-xs text-gray-400">Paid This Month</p>
-                        <p className="text-2xl font-bold text-emerald-400">
-                          ₹{hostelRentPayments
-                            .filter((p: any) => p.month === selectedMonth)
-                            .reduce((sum: number, p: any) => sum + p.amount, 0)
-                            .toLocaleString()}
-                        </p>
-                        <p className="text-xs text-emerald-600 mt-1">
-                          {hostelRentPayments.filter((p: any) => p.month === selectedMonth).length} payment(s)
-                        </p>
+                      <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="bg-red-500/10 p-4 rounded-lg border border-red-500/20">
+                          <p className="text-xs text-gray-400">Total Rent</p>
+                          <p className="text-2xl font-bold text-white">₹{hostelRentTarget.toLocaleString()}</p>
+                          <p className="text-xs text-gray-500 mt-1">Monthly Target</p>
+                        </div>
+                        <div className="bg-emerald-500/10 p-4 rounded-lg border border-emerald-500/20">
+                          <p className="text-xs text-gray-400">Paid This Month</p>
+                          <p className="text-2xl font-bold text-emerald-400">
+                            ₹{hostelRentPayments
+                              .filter((p: any) => p.month === selectedMonth)
+                              .reduce((sum: number, p: any) => sum + p.amount, 0)
+                              .toLocaleString()}
+                          </p>
+                          <p className="text-xs text-emerald-600 mt-1">
+                            {hostelRentPayments.filter((p: any) => p.month === selectedMonth).length} payment(s)
+                          </p>
+                        </div>
+                        <div className="bg-orange-500/10 p-4 rounded-lg border border-orange-500/20">
+                          <p className="text-xs text-gray-400">Remaining</p>
+                          <p className="text-2xl font-bold text-orange-400">
+                            ₹{(hostelRentTarget - hostelRentPayments
+                              .filter((p: any) => p.month === selectedMonth)
+                              .reduce((sum: number, p: any) => sum + p.amount, 0))
+                              .toLocaleString()}
+                          </p>
+                          <p className="text-xs text-orange-600 mt-1">
+                            {Math.round(((hostelRentTarget - hostelRentPayments.filter((p: any) => p.month === selectedMonth).reduce((sum: number, p: any) => sum + p.amount, 0)) / hostelRentTarget) * 100)}% pending
+                          </p>
+                        </div>
                       </div>
-                      <div className="bg-orange-500/10 p-4 rounded-lg border border-orange-500/20">
-                        <p className="text-xs text-gray-400">Remaining</p>
-                        <p className="text-2xl font-bold text-orange-400">
-                          ₹{(120000 - hostelRentPayments
-                            .filter((p: any) => p.month === selectedMonth)
-                            .reduce((sum: number, p: any) => sum + p.amount, 0))
-                            .toLocaleString()}
-                        </p>
-                        <p className="text-xs text-orange-600 mt-1">
-                          {Math.round(((120000 - hostelRentPayments.filter((p: any) => p.month === selectedMonth).reduce((sum: number, p: any) => sum + p.amount, 0)) / 120000) * 100)}% pending
-                        </p>
-                      </div>
-                    </div>
-                  </CardHeader>
+                    </CardHeader>
                   <CardContent className="p-0">
                     <div className="divide-y divide-gray-700/50">
                       {hostelRentPayments
@@ -508,6 +524,7 @@ const Payments = () => {
                   </CardContent>
                 </Card>
               </TabsContent>
+              )}
 
               {/* Electricity Bill Tab */}
               <TabsContent value="electricity" className="m-0">
@@ -720,7 +737,7 @@ const Payments = () => {
             </div>
             <div className="bg-red-500/10 p-4 rounded-lg border border-red-500/20">
               <p className="text-xs text-gray-400">Monthly Rent Target</p>
-              <p className="text-2xl font-bold text-white">₹1,20,000</p>
+              <p className="text-2xl font-bold text-white">₹{hostelRentTarget.toLocaleString()}</p>
             </div>
           </div>
           <DialogFooter>

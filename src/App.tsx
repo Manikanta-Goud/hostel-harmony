@@ -17,6 +17,8 @@ import StaffOverview from "./pages/StaffOverview";
 import Payments from "./pages/Payments";
 import Expenses from "./pages/Expenses";
 import Requirements from "./pages/Requirements";
+import StudentPortal from "./pages/StudentPortal";
+import StudentDesk from "./pages/StudentDesk";
 import ProtectedRoute from "./components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
 
@@ -62,6 +64,10 @@ const App = () => (
               } />
               <Route path="/requirements" element={
                 <ProtectedRoute><Requirements /></ProtectedRoute>
+              } />
+              <Route path="/student-form" element={<StudentPortal />} />
+              <Route path="/student-desk" element={
+                <ProtectedRoute><StudentDesk /></ProtectedRoute>
               } />
               <Route path="*" element={<NotFound />} />
             </Routes>
