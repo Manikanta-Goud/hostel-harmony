@@ -5,12 +5,35 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MessageSquareWarning, CalendarClock, CheckCircle2, User, MapPin, Clock } from 'lucide-react';
+import { MessageSquareWarning, CalendarClock, CheckCircle2, User, MapPin, Clock, Copy, Link2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
 
 const StudentDesk = () => {
-  const { complaints, attendance, resolveComplaint } = useHostel();
+  const { complaints, attendance, resolveComplaint, hostels } = useHostel();
   const [activeTab, setActiveTab] = useState('complaints');
+  const [selectedHostelId, setSelectedHostelId] = useState('');
+  const { toast } = useToast();
+
+  const validHostelIds = hostels.map(h => h.id);
+  const filteredComplaints = complaints.filter(c => validHostelIds.includes(c.hostelId));
+  const filteredAttendance = attendance.filter(a => validHostelIds.includes(a.hostelId));
+
+  // Initialize selected hostel if empty
+  React.useEffect(() => {
+    if (!selectedHostelId && hostels.length > 0) {
+      setSelectedHostelId(hostels[0].id);
+    }
+  }, [hostels, selectedHostelId]);
+
+  const handleCopyLink = () => {
+    if (!selectedHostelId) return;
+    const selectedHostel = hostels.find(h => h.id === selectedHostelId);
+    const hostelName = selectedHostel ? encodeURIComponent(selectedHostel.name) : '';
+    const link = `${window.location.origin}/${selectedHostelId}/student-form?name=${hostelName}`;
+    navigator.clipboard.writeText(link);
+    toast({ title: "Link Copied!", description: "You can now share this form link with your students." });
+  };
 
   return (
     <MainLayout>
@@ -22,7 +45,27 @@ const StudentDesk = () => {
               <MessageSquareWarning className="w-8 h-8 text-orange-500" />
               Resident Desk
             </h1>
-            <p className="text-gray-400 mt-2">Manage student complaints and view daily attendance</p>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-2">
+              <p className="text-gray-400">Manage student complaints and view daily attendance</p>
+              
+              {hostels.length > 0 && (
+                <div className="flex items-center gap-2 bg-gray-800/50 p-2 rounded-lg border border-gray-700">
+                  <Link2 className="w-4 h-4 text-gray-400" />
+                  <select 
+                    className="bg-transparent text-sm text-gray-200 outline-none border-none cursor-pointer"
+                    value={selectedHostelId}
+                    onChange={(e) => setSelectedHostelId(e.target.value)}
+                  >
+                    {hostels.map(h => (
+                      <option key={h.id} value={h.id} className="bg-gray-800">{h.name}</option>
+                    ))}
+                  </select>
+                  <Button size="sm" variant="secondary" onClick={handleCopyLink} className="h-7 text-xs bg-orange-500/20 text-orange-400 hover:bg-orange-500 hover:text-white border-0">
+                    <Copy className="w-3 h-3 mr-1" /> Copy Form Link
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 
@@ -31,7 +74,7 @@ const StudentDesk = () => {
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
               <TabsList className="bg-[#0f1f3a] border border-gray-700/50 p-1 w-full max-w-md grid grid-cols-2">
                 <TabsTrigger value="complaints" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white">
-                  Complaints ({complaints.filter(c => c.status === 'open').length})
+                  Complaints ({filteredComplaints.filter(c => c.status === 'open').length})
                 </TabsTrigger>
                 <TabsTrigger value="attendance" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
                   Attendance
@@ -40,7 +83,7 @@ const StudentDesk = () => {
 
               {/* COMPLAINTS TAB */}
               <TabsContent value="complaints" className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
-                {complaints.length === 0 ? (
+                {filteredComplaints.length === 0 ? (
                   <Card className="bg-[#0f1f3a] border-dashed border-gray-700">
                     <CardContent className="py-20 text-center">
                       <div className="mx-auto w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mb-4">
@@ -52,7 +95,7 @@ const StudentDesk = () => {
                   </Card>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {complaints.map(complaint => (
+                    {filteredComplaints.map(complaint => (
                       <Card key={complaint.id} className="bg-[#0f1f3a] border-gray-700/50 hover:border-orange-500/50 transition-colors group flex flex-col">
                         <CardHeader className="pb-3 border-b border-gray-800">
                           <div className="flex justify-between items-start">
@@ -98,7 +141,7 @@ const StudentDesk = () => {
 
               {/* ATTENDANCE TAB */}
               <TabsContent value="attendance" className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
-                {attendance.length === 0 ? (
+                {filteredAttendance.length === 0 ? (
                   <Card className="bg-[#0f1f3a] border-dashed border-gray-700">
                     <CardContent className="py-20 text-center">
                       <div className="mx-auto w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mb-4">
@@ -122,7 +165,7 @@ const StudentDesk = () => {
                           </tr>
                         </thead>
                         <tbody>
-                          {attendance.map((record) => (
+                          {filteredAttendance.map((record) => (
                             <tr key={record.id} className="border-b border-gray-800/50 hover:bg-white/5 transition-colors">
                               <td className="px-6 py-4 font-medium text-white flex items-center gap-2">
                                 <User className="w-4 h-4 text-blue-400" />

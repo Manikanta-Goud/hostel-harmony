@@ -156,6 +156,7 @@ export interface Requirement {
 
 export interface Complaint {
   id: string;
+  hostelId: string;
   studentName: string;
   roomName: string;
   issue: string;
@@ -165,6 +166,7 @@ export interface Complaint {
 
 export interface AttendanceRecord {
   id: string;
+  hostelId: string;
   studentName: string;
   roomName: string;
   date: string;

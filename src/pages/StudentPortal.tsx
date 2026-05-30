@@ -9,8 +9,13 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
 import { CheckCircle2, MessageSquareWarning, CalendarClock, Building2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useParams, useSearchParams } from 'react-router-dom';
 
 const StudentPortal = () => {
+  const { hostelId } = useParams();
+  const [searchParams] = useSearchParams();
+  const hostelName = searchParams.get('name');
+  
   const { addComplaint, addAttendance } = useHostel();
   const { toast } = useToast();
   
@@ -33,12 +38,18 @@ const StudentPortal = () => {
       return;
     }
 
+    if (!hostelId) {
+      toast({ title: "Invalid Portal Link", description: "Missing hostel reference in URL.", variant: "destructive" });
+      return;
+    }
+
     if (activeTab === 'complaints') {
       if (!formData.issue.trim()) {
         toast({ title: "Please describe your complaint", variant: "destructive" });
         return;
       }
       addComplaint({
+        hostelId,
         studentName: formData.studentName,
         roomName: formData.roomName,
         issue: formData.issue
@@ -50,6 +61,7 @@ const StudentPortal = () => {
         return;
       }
       addAttendance({
+        hostelId,
         studentName: formData.studentName,
         roomName: formData.roomName,
         status: formData.attendanceStatus as 'present' | 'absent',
@@ -79,10 +91,10 @@ const StudentPortal = () => {
             <Building2 className="w-7 h-7 text-white" />
           </div>
           <CardTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-orange-400 to-red-400">
-            Resident Portal
+            {hostelName ? `${hostelName} Portal` : 'Resident Portal'}
           </CardTitle>
           <CardDescription className="text-gray-400">
-            Submit daily attendance or log a complaint
+            Submit daily attendance or log a complaint for {hostelName || 'your hostel'}
           </CardDescription>
         </CardHeader>
         <CardContent>
