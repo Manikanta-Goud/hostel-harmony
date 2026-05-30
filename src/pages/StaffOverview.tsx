@@ -127,26 +127,38 @@ const StaffOverview = () => {
 
     const handleAddStaff = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selectedHostel?.id) return;
+        if (!selectedHostel?.id) {
+            toast({ title: 'Error', description: 'Please create and select a hostel first.', variant: 'destructive' });
+            return;
+        }
 
-        await addStaff({
-            hostelId: selectedHostel.id,
-            ...formData,
-            joinDate: new Date().toISOString(),
-        });
-
-        resetForm();
-        setIsAddDialogOpen(false);
+        try {
+            await addStaff({
+                hostelId: selectedHostel.id,
+                ...formData,
+                joinDate: new Date().toISOString(),
+            });
+            toast({ title: 'Success', description: 'Staff member added successfully' });
+            resetForm();
+            setIsAddDialogOpen(false);
+        } catch (error: any) {
+            toast({ title: 'Error', description: error.message || 'Failed to add staff member. Check database tables.', variant: 'destructive' });
+        }
     };
 
     const handleEditStaff = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedStaff) return;
 
-        await updateStaff(selectedStaff.id, formData);
-        setIsEditDialogOpen(false);
-        setSelectedStaff(null);
-        resetForm();
+        try {
+            await updateStaff(selectedStaff.id, formData);
+            toast({ title: 'Success', description: 'Staff member updated successfully' });
+            setIsEditDialogOpen(false);
+            setSelectedStaff(null);
+            resetForm();
+        } catch (error: any) {
+            toast({ title: 'Error', description: error.message || 'Failed to update staff member', variant: 'destructive' });
+        }
     };
 
     const openEditDialog = (staffMember: Staff) => {
@@ -175,7 +187,10 @@ const StaffOverview = () => {
     // Utility handlers
     const handleAddUtility = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selectedHostel?.id) return;
+        if (!selectedHostel?.id) {
+            toast({ title: 'Error', description: 'Please create and select a hostel first.', variant: 'destructive' });
+            return;
+        }
         try {
             await addUtility({
                 hostelId: selectedHostel.id,
@@ -234,7 +249,10 @@ const StaffOverview = () => {
     // Supplier handlers
     const handleAddSupplier = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selectedHostel?.id) return;
+        if (!selectedHostel?.id) {
+            toast({ title: 'Error', description: 'Please create and select a hostel first.', variant: 'destructive' });
+            return;
+        }
         try {
             const supplierData: any = {
                 hostelId: selectedHostel.id,
